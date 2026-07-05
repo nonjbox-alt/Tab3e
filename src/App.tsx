@@ -24,9 +24,12 @@ import {
   AlertCircle,
   X,
   Tv,
-  Copy
+  Copy,
+  KeyRound,
+  Eye,
+  EyeOff
 } from "lucide-react";
-import { TrackedItem, ThemeType, Statistics, ItemCategory, Season, Episode, getApiUrl } from "./types";
+import { TrackedItem, ThemeType, Statistics, ItemCategory, Season, Episode, getApiUrl, getFetchHeaders } from "./types";
 import { getInitialTrackedItems } from "./initialData";
 import { Navigation } from "./components/Navigation";
 import { TrackedCard } from "./components/TrackedCard";
@@ -160,6 +163,10 @@ export default function App() {
   // PWA Install prompt state
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
+  // TMDB API key configuration states
+  const [tmdbApiKey, setTmdbApiKey] = useState<string>("");
+  const [showApiKey, setShowApiKey] = useState<boolean>(false);
+
   // 2. Load Local Storage on startup and listen for PWA install prompt
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -178,6 +185,12 @@ export default function App() {
     const savedTheme = localStorage.getItem("wv_theme") as ThemeType;
     if (savedTheme) {
       setTheme(savedTheme);
+    }
+
+    // Load TMDB API Key
+    const savedApiKey = localStorage.getItem("wv_tmdb_api_key");
+    if (savedApiKey) {
+      setTmdbApiKey(savedApiKey);
     }
 
     // Force-clear once on startup for a clean slate requested by the user
@@ -258,7 +271,9 @@ export default function App() {
     setSearchingOnline(true);
     setSearchFeedback("جاري البحث عن العناوين المذهلة...");
     try {
-      const response = await fetch(getApiUrl(`/api/search?query=${encodeURIComponent(query)}&language=ar`));
+      const response = await fetch(getApiUrl(`/api/search?query=${encodeURIComponent(query)}&language=ar`), {
+        headers: getFetchHeaders(),
+      });
       if (!response.ok) {
         throw new Error("فشل جلب نتائج البحث من TMDB");
       }
@@ -336,7 +351,9 @@ export default function App() {
 
     try {
       // Fetch full details to get total seasons and backdrop
-      const detailsResp = await fetch(getApiUrl(`/api/details?id=${tmdbItem.id}&type=${tmdbItem.media_type}&language=ar`));
+      const detailsResp = await fetch(getApiUrl(`/api/details?id=${tmdbItem.id}&type=${tmdbItem.media_type}&language=ar`), {
+        headers: getFetchHeaders(),
+      });
       if (!detailsResp.ok) throw new Error("Details fetch failed");
       const details = await detailsResp.json();
 
@@ -1941,6 +1958,66 @@ export default function App() {
                     </button>
                   );
                 })}
+              </div>
+            </section>
+
+            {/* TMDB API Key Setup Card */}
+            <section className={`rounded-2xl p-5 md:p-6 shadow-sm border flex flex-col gap-4 transition-all duration-300 ${getThemeSectionClass()}`}>
+              <div className="flex items-start gap-3.5" dir="rtl">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0">
+                  <KeyRound className="w-5 h-5 text-sky-400" />
+                </div>
+                <div className="text-right flex-1">
+                  <h3 className={`font-bold text-xs md:text-sm ${getThemeHeadingTextClass()}`}>ربط مفتاح API الخاص بـ TMDB</h3>
+                  <p className={`text-[11px] leading-relaxed mt-1 ${getThemeSubtextClass()}`}>
+                    أدخل مفتاح API (API Key v3) الخاص بك لتشغيل جلب البيانات الحية والتفاصيل من موقع TheMovieDB مباشرة باسمك دون التقيد بالحدود الافتراضية.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 mt-1.5" dir="rtl">
+                <div className="relative">
+                  <input
+                    type={showApiKey ? "text" : "password"}
+                    placeholder="أدخل مفتاح TMDB API v3 الخاص بك (مثال: 5e3f3156e27ac...)"
+                    value={tmdbApiKey}
+                    onChange={(e) => {
+                      const val = e.target.value.trim();
+                      setTmdbApiKey(val);
+                      localStorage.setItem("wv_tmdb_api_key", val);
+                    }}
+                    className={`w-full text-xs rounded-xl pl-12 pr-4 py-3 focus:outline-none font-mono ${getThemeInputClass()}`}
+                  />
+                  <button
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    className="absolute left-4 top-2.5 p-1 text-neutral-400 hover:text-neutral-200"
+                  >
+                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-1">
+                  <div className="flex items-center gap-1.5">
+                    {tmdbApiKey ? (
+                      <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/5 border border-emerald-500/10 px-2.5 py-1 rounded-md">
+                        مفتاح مخصص مفعّل ومحفوظ محلياً
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-amber-500 bg-amber-500/5 border border-amber-500/10 px-2.5 py-1 rounded-md">
+                        يتم استخدام المفتاح الافتراضي المدمج بالنظام حالياً
+                      </span>
+                    )}
+                  </div>
+                  <a
+                    href="https://www.themoviedb.org/settings/api"
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`text-[10px] font-bold flex items-center gap-1 ${getThemeAccentClass()}`}
+                  >
+                    <span>الحصول على مفتاح API مجاني من TMDB</span>
+                    <Sparkles className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
             </section>
 

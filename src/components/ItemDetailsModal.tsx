@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { TrackedItem, Season, Episode, ThemeType, getApiUrl } from "../types";
+import { TrackedItem, Season, Episode, ThemeType, getApiUrl, getFetchHeaders } from "../types";
 import { X, Calendar, Clock, Star, Film, CheckCircle2, Heart, RefreshCw, AlertCircle, Trash2, Edit, Image as ImageIcon, Save, Plus, Minus } from "lucide-react";
 
 interface ItemDetailsModalProps {
@@ -72,7 +72,9 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     setLoadingSeason(true);
     setErrorSeason(null);
     try {
-      const response = await fetch(getApiUrl(`/api/season?id=${tmdbId}&season=${seasonNum}&language=ar`));
+      const response = await fetch(getApiUrl(`/api/season?id=${tmdbId}&season=${seasonNum}&language=ar`), {
+        headers: getFetchHeaders(),
+      });
       if (!response.ok) {
         throw new Error("فشل جلب تفاصيل الموسم من TMDB");
       }

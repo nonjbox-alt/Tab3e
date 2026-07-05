@@ -13,6 +13,15 @@ const PORT = 3000;
 const TMDB_API_KEY = process.env.TMDB_API_KEY || "5e3f3156e27ac31165e5b8a3ad95bc82";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
+// Helper to extract custom key from request headers if provided
+const getTmdbApiKey = (req: express.Request): string => {
+  const customKey = req.headers["x-tmdb-api-key"] || req.headers["X-TMDB-API-KEY"];
+  if (customKey && typeof customKey === "string" && customKey.trim() !== "") {
+    return customKey.trim();
+  }
+  return TMDB_API_KEY;
+};
+
 app.use(express.json());
 
 // API Routes
@@ -75,7 +84,8 @@ app.get("/api/search", async (req, res) => {
       return res.status(400).json({ error: "Query parameter is required" });
     }
 
-    const url = `${TMDB_BASE_URL}/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query as string)}&language=${language}&include_adult=false`;
+    const apiKey = getTmdbApiKey(req);
+    const url = `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query as string)}&language=${language}&include_adult=false`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`TMDB responded with status ${response.status}`);
@@ -92,7 +102,8 @@ app.get("/api/search", async (req, res) => {
 app.get("/api/trending", async (req, res) => {
   try {
     const { language = "ar", page = "1" } = req.query;
-    const url = `${TMDB_BASE_URL}/trending/all/week?api_key=${TMDB_API_KEY}&language=${language}&page=${page}`;
+    const apiKey = getTmdbApiKey(req);
+    const url = `${TMDB_BASE_URL}/trending/all/week?api_key=${apiKey}&language=${language}&page=${page}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`TMDB responded with status ${response.status}`);
@@ -117,7 +128,8 @@ app.get("/api/details", async (req, res) => {
       return res.status(400).json({ error: "type must be 'movie' or 'tv'" });
     }
 
-    const url = `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&language=${language}&append_to_response=credits,images,videos,recommendations`;
+    const apiKey = getTmdbApiKey(req);
+    const url = `${TMDB_BASE_URL}/${type}/${id}?api_key=${apiKey}&language=${language}&append_to_response=credits,images,videos,recommendations`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`TMDB responded with status ${response.status}`);
@@ -138,7 +150,8 @@ app.get("/api/season", async (req, res) => {
       return res.status(400).json({ error: "id and season parameters are required" });
     }
 
-    const url = `${TMDB_BASE_URL}/tv/${id}/season/${season}?api_key=${TMDB_API_KEY}&language=${language}`;
+    const apiKey = getTmdbApiKey(req);
+    const url = `${TMDB_BASE_URL}/tv/${id}/season/${season}?api_key=${apiKey}&language=${language}`;
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`TMDB responded with status ${response.status}`);

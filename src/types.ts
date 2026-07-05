@@ -97,3 +97,14 @@ export const getApiUrl = (path: string): string => {
   return path;
 };
 
+export const getFetchHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  if (typeof localStorage !== "undefined") {
+    const customKey = localStorage.getItem("wv_tmdb_api_key");
+    if (customKey && customKey.trim() !== "") {
+      headers["X-TMDB-API-KEY"] = customKey.trim();
+    }
+  }
+  return headers;
+};
+
