@@ -26,7 +26,7 @@ import {
   Tv,
   Copy
 } from "lucide-react";
-import { TrackedItem, ThemeType, Statistics, ItemCategory, Season, Episode } from "./types";
+import { TrackedItem, ThemeType, Statistics, ItemCategory, Season, Episode, getApiUrl } from "./types";
 import { getInitialTrackedItems } from "./initialData";
 import { Navigation } from "./components/Navigation";
 import { TrackedCard } from "./components/TrackedCard";
@@ -157,7 +157,22 @@ export default function App() {
   // File input ref for TV Time import
   const tvTimeInputRef = useRef<HTMLInputElement>(null);
 
-  // 2. Load Local Storage on startup
+  // PWA Install prompt state
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  // 2. Load Local Storage on startup and listen for PWA install prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    };
+  }, []);
+
   useEffect(() => {
     // Load theme
     const savedTheme = localStorage.getItem("wv_theme") as ThemeType;
@@ -243,7 +258,7 @@ export default function App() {
     setSearchingOnline(true);
     setSearchFeedback("جاري البحث عن العناوين المذهلة...");
     try {
-      const response = await fetch(`/api/search?query=${encodeURIComponent(query)}&language=ar`);
+      const response = await fetch(getApiUrl(`/api/search?query=${encodeURIComponent(query)}&language=ar`));
       if (!response.ok) {
         throw new Error("فشل جلب نتائج البحث من TMDB");
       }
@@ -321,7 +336,7 @@ export default function App() {
 
     try {
       // Fetch full details to get total seasons and backdrop
-      const detailsResp = await fetch(`/api/details?id=${tmdbItem.id}&type=${tmdbItem.media_type}&language=ar`);
+      const detailsResp = await fetch(getApiUrl(`/api/details?id=${tmdbItem.id}&type=${tmdbItem.media_type}&language=ar`));
       if (!detailsResp.ok) throw new Error("Details fetch failed");
       const details = await detailsResp.json();
 
@@ -568,6 +583,23 @@ export default function App() {
   };
 
   // 10. Backup & Reset Systems
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      try {
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === "accepted") {
+          showToast("رائع! جاري تثبيت تطبيق WatchVault على جهازك.");
+        }
+      } catch (err) {
+        console.error("PWA Install error:", err);
+      }
+      setDeferredPrompt(null);
+    } else {
+      showToast("التثبيت التلقائي المباشر غير مدعوم في هذا المتصفح. يمكنك تثبيته يدوياً من قائمة المتصفح.", "error");
+    }
+  };
+
   const handleExportBackup = () => {
     const backupData = {
       trackedItems,
@@ -1783,9 +1815,9 @@ export default function App() {
                     return (
                       <div
                         key={`${tmdbItem.media_type}_${tmdbItem.id}`}
-                        className="bg-[#0b0b0e] border border-neutral-900/50 p-3 rounded-xl flex items-center justify-between gap-4 hover:border-neutral-800 transition-colors duration-200"
+                        className="bg-[#0b0b0e] border border-neutral-900/50 p-3.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 hover:border-neutral-800 transition-colors duration-200"
                       >
-                        <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="flex items-center gap-3.5 min-w-0 w-full">
                           {/* Mini poster with clean ratio */}
                           <div className="w-10 h-14 rounded-lg bg-neutral-950 shrink-0 overflow-hidden shadow-md">
                             <img
@@ -1796,7 +1828,7 @@ export default function App() {
                             />
                           </div>
                           
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <h4 className="text-xs font-bold text-neutral-100 truncate">{titleText}</h4>
                             {originalTitleText && originalTitleText !== titleText && (
                               <p className="text-[9px] text-neutral-500 font-mono truncate">{originalTitleText}</p>
@@ -1816,19 +1848,21 @@ export default function App() {
                         </div>
 
                         {/* Add to Library (+) Trigger */}
-                        {isAdded ? (
-                          <span className="text-[10px] font-bold text-emerald-500 shrink-0 px-3 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                            مضاف في مكتبتك
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => handleAddTmdbItem(tmdbItem)}
-                            className="shrink-0 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:text-white text-xs font-semibold py-2 px-3.5 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all duration-200 text-neutral-300"
-                          >
-                            <Plus className="w-4 h-4" />
-                            <span>تتبع العمل</span>
-                          </button>
-                        )}
+                        <div className="w-full sm:w-auto shrink-0 flex justify-end">
+                          {isAdded ? (
+                            <span className="text-[10px] font-bold text-emerald-500 text-center w-full sm:w-auto px-3 py-1.5 rounded-lg bg-emerald-500/5 border border-emerald-500/10 block">
+                              مضاف في مكتبتك
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleAddTmdbItem(tmdbItem)}
+                              className="w-full sm:w-auto justify-center bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:text-white text-xs font-semibold py-2 px-3.5 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all duration-200 text-neutral-300"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>تتبع العمل</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -2013,6 +2047,70 @@ export default function App() {
                   <FileUp className="w-4 h-4" />
                   <span>اختر ملفات TV Time (JSON / CSV)</span>
                 </button>
+              </div>
+            </section>
+
+            {/* Mobile App (APK / PWA) Section */}
+            <section className={`rounded-2xl p-5 md:p-6 shadow-sm border flex flex-col gap-4 transition-all duration-300 ${getThemeSectionClass()}`}>
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5 text-teal-400" />
+                </div>
+                <div className="text-right">
+                  <h3 className={`font-bold text-xs md:text-sm ${getThemeHeadingTextClass()}`}>تحويل WatchVault إلى تطبيق جوال (APK / PWA)</h3>
+                  <p className={`text-[11px] leading-relaxed mt-1 ${getThemeSubtextClass()}`}>
+                    استخدم التطبيق كأنه تطبيق Android native رسمي ومستقل تماماً ومثبت على هاتفك بضغطة زر!
+                  </p>
+                </div>
+              </div>
+
+              {/* Grid with 2 Options: PWA (Instant) & APK (Capacitor) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
+                {/* Option 1: Progressive Web App - Instant Install */}
+                <div className="border border-neutral-900/50 rounded-xl p-4 flex flex-col gap-3 bg-neutral-950/20">
+                  <div className="flex items-center gap-2 text-right" dir="rtl">
+                    <span className="w-5 h-5 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-bold flex items-center justify-center border border-emerald-500/20">1</span>
+                    <h4 className="text-xs font-bold text-white">تثبيت فوري كـ PWA (موصى به جداً)</h4>
+                  </div>
+                  <p className={`text-[10px] leading-normal text-right ${getThemeSubtextClass()}`}>
+                    يتصرف كـ APK حقيقي تماماً! يظهر كأيقونة على شاشتك الرئيسية، ويفتح في نافذة كاملة ومستقلة بدون أشرطة المتصفح، وسريع جداً وموفر لبيانات الإنترنت.
+                  </p>
+                  
+                  <div className="mt-auto pt-2 flex flex-col gap-2">
+                    <button
+                      onClick={handleInstallPWA}
+                      className="w-full text-xs font-bold py-2.5 px-4 rounded-xl bg-teal-500 hover:bg-teal-600 text-neutral-950 transition-all duration-300 flex items-center justify-center gap-1.5 shadow-md active:scale-98 cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                      <span>تثبيت التطبيق على هاتفك الآن</span>
+                    </button>
+                    <span className="text-[9px] text-neutral-500 text-center">
+                      💡 في حال لم يعمل الزر تلقائياً: افتح الخيارات في Chrome على هاتفك واضغط <strong>"التثبيت على الشاشة الرئيسية"</strong>.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Option 2: Capacitor Native Android APK Compilation */}
+                <div className="border border-neutral-900/50 rounded-xl p-4 flex flex-col gap-3 bg-neutral-950/20">
+                  <div className="flex items-center gap-2 text-right" dir="rtl">
+                    <span className="w-5 h-5 rounded-lg bg-amber-500/10 text-amber-400 text-[10px] font-bold flex items-center justify-center border border-amber-500/20">2</span>
+                    <h4 className="text-xs font-bold text-white">بناء ملف APK حقيقي عبر Capacitor</h4>
+                  </div>
+                  <p className={`text-[10px] leading-normal text-right ${getThemeSubtextClass()}`}>
+                    المشروع مجهز بالكامل بأدوات <strong>Capacitor</strong> لبناء حزمة Android native حقيقية (.apk) لرفعها لمتجر Google Play أو تثبيتها يدوياً.
+                  </p>
+                  
+                  <div className="text-[9px] text-neutral-400 bg-black/40 p-2.5 rounded-lg space-y-1 font-mono text-left leading-normal" dir="ltr">
+                    <div># 1. Download project ZIP or git clone</div>
+                    <div>npm install</div>
+                    <div>npm run build</div>
+                    <div>npx cap sync</div>
+                    <div>npx cap open android</div>
+                  </div>
+                  <p className="text-[9px] text-neutral-500 text-right leading-normal">
+                    💡 تفتح لك أداة Capacitor مشروع أندرويد متكامل داخل Android Studio، حيث يمكنك تجميع ملف الـ APK النهائي بضغطة زر وتثبيته على هاتفك!
+                  </p>
+                </div>
               </div>
             </section>
 

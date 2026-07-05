@@ -73,3 +73,27 @@ export interface Statistics {
   };
   history: HistoryItem[];
 }
+
+export const getApiUrl = (path: string): string => {
+  const currentOrigin = typeof window !== "undefined" ? window.location.origin : "";
+  const isLocalDevice = currentOrigin.includes("localhost") || 
+                        currentOrigin.includes("127.0.0.1") || 
+                        currentOrigin.includes("capacitor://") || 
+                        currentOrigin.startsWith("http://localhost");
+  
+  if (isLocalDevice) {
+    if (currentOrigin.includes(":3000")) {
+      return path;
+    }
+    const savedServer = typeof localStorage !== "undefined" ? localStorage.getItem("last_known_server_url") : null;
+    if (savedServer) {
+      return `${savedServer}${path}`;
+    }
+  } else if (currentOrigin) {
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("last_known_server_url", currentOrigin);
+    }
+  }
+  return path;
+};
+
