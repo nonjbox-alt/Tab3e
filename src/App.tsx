@@ -23,9 +23,10 @@ import {
   Sparkles,
   AlertCircle,
   X,
-  Tv
+  Tv,
+  Copy
 } from "lucide-react";
-import { TrackedItem, ThemeType, Statistics, ItemCategory } from "./types";
+import { TrackedItem, ThemeType, Statistics, ItemCategory, Season, Episode } from "./types";
 import { getInitialTrackedItems } from "./initialData";
 import { Navigation } from "./components/Navigation";
 import { TrackedCard } from "./components/TrackedCard";
@@ -34,9 +35,10 @@ import { ItemDetailsModal } from "./components/ItemDetailsModal";
 
 interface ManualAddInlineFormProps {
   onAdd: (title: string, category: ItemCategory) => void;
+  theme: ThemeType;
 }
 
-const ManualAddInlineForm: React.FC<ManualAddInlineFormProps> = ({ onAdd }) => {
+const ManualAddInlineForm: React.FC<ManualAddInlineFormProps> = ({ onAdd, theme }) => {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<ItemCategory>("series");
 
@@ -47,11 +49,43 @@ const ManualAddInlineForm: React.FC<ManualAddInlineFormProps> = ({ onAdd }) => {
     setTitle("");
   };
 
+  const getFormBg = () => {
+    if (theme === "minimal") return "bg-white border-neutral-200 text-neutral-950 shadow-sm";
+    if (theme === "netflix") return "bg-[#110f0c] border-amber-950/20 text-amber-100";
+    if (theme === "material") return "bg-[#18181c] border-zinc-900/60 text-zinc-100";
+    return "bg-[#0b0b0e] border border-neutral-900/60 text-neutral-100"; // OLED Black
+  };
+
+  const getInputClass = () => {
+    if (theme === "minimal") return "bg-neutral-50 border-neutral-200 text-neutral-900 focus:border-neutral-400";
+    if (theme === "netflix") return "bg-neutral-950 border-neutral-900/40 text-amber-100 focus:border-amber-900/30";
+    if (theme === "material") return "bg-zinc-950 border-zinc-900/40 text-zinc-100 focus:border-zinc-800";
+    return "bg-neutral-950 border-neutral-900/60 text-neutral-200 focus:border-neutral-700";
+  };
+
+  const getSubmitButtonClass = () => {
+    if (theme === "minimal") return "bg-neutral-950 hover:bg-neutral-900 text-white";
+    if (theme === "netflix") return "bg-amber-400 hover:bg-amber-500 text-neutral-950 font-bold";
+    if (theme === "material") return "bg-zinc-100 hover:bg-white text-zinc-950";
+    return "bg-neutral-100 hover:bg-neutral-200 text-neutral-950";
+  };
+
+  const getButtonActiveStyle = (active: boolean) => {
+    if (active) {
+      if (theme === "minimal") return "bg-neutral-900 text-white font-bold shadow-sm";
+      if (theme === "netflix") return "bg-amber-400 text-neutral-950 font-bold";
+      if (theme === "material") return "bg-zinc-200 text-zinc-950 font-bold";
+      return "bg-white text-black font-bold";
+    }
+    if (theme === "minimal") return "text-neutral-400 hover:text-neutral-600";
+    return "text-neutral-500 hover:text-neutral-300";
+  };
+
   return (
-    <div className="bg-[#0b0b0e] border border-neutral-900/60 rounded-2xl p-4 md:p-5 mt-6 select-none text-right">
+    <div className={`rounded-2xl p-4 md:p-5 mt-6 select-none text-right border transition-all duration-300 ${getFormBg()}`}>
       <div className="flex items-center gap-2 mb-3 justify-start" dir="rtl">
         <Plus className="w-4 h-4 text-neutral-400" />
-        <h3 className="font-bold text-xs md:text-sm text-neutral-300">إضافة عمل مخصص يدوي تحت القائمة</h3>
+        <h3 className="font-bold text-xs md:text-sm">إضافة عمل مخصص يدوي تحت القائمة</h3>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-center gap-3" dir="rtl">
         <input
@@ -59,25 +93,21 @@ const ManualAddInlineForm: React.FC<ManualAddInlineFormProps> = ({ onAdd }) => {
           placeholder="أدخل اسم الفيلم أو المسلسل هنا..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="bg-neutral-950 border border-neutral-900/60 w-full text-xs rounded-xl px-4 py-3 focus:outline-none focus:border-neutral-700 text-neutral-200"
+          className={`w-full text-xs rounded-xl px-4 py-3 focus:outline-none border transition-colors ${getInputClass()}`}
         />
         <div className="flex items-center w-full sm:w-auto gap-2 shrink-0">
-          <div className="flex rounded-xl bg-neutral-950 p-1 border border-neutral-900/40 w-full sm:w-auto">
+          <div className={`flex rounded-xl p-1 border w-full sm:w-auto ${theme === "minimal" ? "bg-neutral-50 border-neutral-200" : "bg-neutral-950 border-neutral-900/40"}`}>
             <button
               type="button"
               onClick={() => setCategory("series")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-semibold transition-all ${
-                category === "series" ? "bg-white text-black font-bold" : "text-neutral-500 hover:text-neutral-300"
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-semibold transition-all ${getButtonActiveStyle(category === "series")}`}
             >
               مسلسل
             </button>
             <button
               type="button"
               onClick={() => setCategory("movie")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-semibold transition-all ${
-                category === "movie" ? "bg-white text-black font-bold" : "text-neutral-500 hover:text-neutral-300"
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-[10px] md:text-xs font-semibold transition-all ${getButtonActiveStyle(category === "movie")}`}
             >
               فيلم
             </button>
@@ -85,7 +115,7 @@ const ManualAddInlineForm: React.FC<ManualAddInlineFormProps> = ({ onAdd }) => {
           <button
             type="submit"
             disabled={!title.trim()}
-            className="bg-neutral-100 hover:bg-neutral-200 disabled:opacity-50 text-neutral-950 text-[10px] md:text-xs font-bold py-2.5 px-4 rounded-xl transition-all h-full shrink-0 flex items-center justify-center gap-1 w-full sm:w-auto"
+            className={`disabled:opacity-50 text-[10px] md:text-xs font-bold py-2.5 px-4 rounded-xl transition-all h-full shrink-0 flex items-center justify-center gap-1 w-full sm:w-auto ${getSubmitButtonClass()}`}
           >
             <span>إضافة عمل</span>
           </button>
@@ -124,6 +154,9 @@ export default function App() {
   // File input ref for backup
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // File input ref for TV Time import
+  const tvTimeInputRef = useRef<HTMLInputElement>(null);
+
   // 2. Load Local Storage on startup
   useEffect(() => {
     // Load theme
@@ -132,73 +165,42 @@ export default function App() {
       setTheme(savedTheme);
     }
 
-    // Load tracked items
-    const savedItems = localStorage.getItem("wv_items");
-    if (savedItems) {
-      try {
-        const parsed = JSON.parse(savedItems) as TrackedItem[];
-        // Filter out Arcane (tv_94605) and Vinland Saga (tv_83868) which were added from head
-        const cleaned = parsed.filter(item => item.id !== "tv_94605" && item.id !== "tv_83868");
-        // Update old broken posters with the verified live ones
-        const updated = cleaned.map(item => {
-          if (item.id === "tv_1399") {
-            return {
-              ...item,
-              posterPath: "/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg",
-              backdropPath: "/2OMB0ynKlyIenMJWI2Dy9IWT4c.jpg"
-            };
-          }
-          if (item.id === "movie_157336") {
-            return {
-              ...item,
-              posterPath: "/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg",
-              backdropPath: "/2ssWTSVklAEc98frZUQhgtGHx7s.jpg"
-            };
-          }
-          if (item.id === "tv_1429") {
-            return {
-              ...item,
-              posterPath: "/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg",
-              backdropPath: "/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg"
-            };
-          }
-          return item;
-        });
-        setTrackedItems(updated);
-        localStorage.setItem("wv_items", JSON.stringify(updated));
-      } catch (e) {
-        console.error("Error loading saved items, using defaults");
-        const defaults = getInitialTrackedItems();
-        setTrackedItems(defaults);
-        localStorage.setItem("wv_items", JSON.stringify(defaults));
-      }
+    // Force-clear once on startup for a clean slate requested by the user
+    const hasClearedForFresh = localStorage.getItem("wv_fresh_cleared_v3");
+    if (!hasClearedForFresh) {
+      localStorage.setItem("wv_items", "[]");
+      localStorage.setItem("wv_activity", "{}");
+      localStorage.setItem("wv_fresh_cleared_v3", "true");
+      setTrackedItems([]);
+      setActivityHistory({});
     } else {
-      // First time user: initialize with beautiful defaults
-      const defaults = getInitialTrackedItems();
-      setTrackedItems(defaults);
-      localStorage.setItem("wv_items", JSON.stringify(defaults));
-    }
-
-    // Load activity history
-    const savedHistory = localStorage.getItem("wv_activity");
-    if (savedHistory) {
-      try {
-        setActivityHistory(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error("Error loading activity history");
-      }
-    } else {
-      // Seed initial activity history from defaults
-      const initialActivity: { [key: string]: number } = {};
-      const defaults = getInitialTrackedItems();
-      defaults.forEach(item => {
-        if (item.completedAt) {
-          const dateStr = item.completedAt.split("T")[0];
-          initialActivity[dateStr] = (initialActivity[dateStr] || 0) + 1;
+      // Load tracked items
+      const savedItems = localStorage.getItem("wv_items");
+      if (savedItems) {
+        try {
+          const parsed = JSON.parse(savedItems) as TrackedItem[];
+          setTrackedItems(parsed);
+        } catch (e) {
+          console.error("Error loading saved items");
+          setTrackedItems([]);
         }
-      });
-      setActivityHistory(initialActivity);
-      localStorage.setItem("wv_activity", JSON.stringify(initialActivity));
+      } else {
+        setTrackedItems([]);
+        localStorage.setItem("wv_items", "[]");
+      }
+
+      // Load activity history
+      const savedHistory = localStorage.getItem("wv_activity");
+      if (savedHistory) {
+        try {
+          setActivityHistory(JSON.parse(savedHistory));
+        } catch (e) {
+          console.error("Error loading activity history");
+        }
+      } else {
+        setActivityHistory({});
+        localStorage.setItem("wv_activity", "{}");
+      }
     }
   }, []);
 
@@ -617,6 +619,359 @@ export default function App() {
     fileReader.readAsText(file);
   };
 
+  const handleCopyBackupToClipboard = () => {
+    try {
+      const backupData = {
+        trackedItems,
+        theme,
+        activityHistory,
+        version: "1.0.0",
+        exportDate: new Date().toISOString(),
+      };
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      navigator.clipboard.writeText(jsonStr);
+      showToast("تم نسخ ملف النسخ الاحتياطي إلى الحافظة بنجاح!");
+    } catch (err) {
+      console.error(err);
+      showToast("فشل في نسخ الاحتياطي إلى الحافظة.", "error");
+    }
+  };
+
+  const handleImportTVTime = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    // Read all selected files as text
+    const fileList = Array.from(files);
+    
+    try {
+      const readFilesData = await Promise.all(
+        fileList.map((file: any) => {
+          return new Promise<{ name: string; content: string }>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              resolve({ name: file.name, content: e.target?.result as string });
+            };
+            reader.onerror = () => reject(new Error(`فشل قراءة ${file.name}`));
+            reader.readAsText(file);
+          });
+        })
+      );
+
+      // Temporary collections for show mapping and movie lists
+      const showsMap: { [id: string]: { id: string; name: string; episodes: { season: number; episode: number }[] } } = {};
+      const moviesList: { id: string; name: string }[] = [];
+
+      // Clean CSV Parser
+      const parseCSVRows = (text: string): string[][] => {
+        const rows: string[][] = [];
+        let row: string[] = [""];
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          const nextChar = text[i + 1];
+          if (char === '"') {
+            if (inQuotes && nextChar === '"') {
+              row[row.length - 1] += '"';
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            row.push("");
+          } else if ((char === '\r' || char === '\n') && !inQuotes) {
+            if (char === '\r' && nextChar === '\n') {
+              i++;
+            }
+            rows.push(row);
+            row = [""];
+          } else {
+            row[row.length - 1] += char;
+          }
+        }
+        if (row.length > 1 || row[0] !== "") {
+          rows.push(row);
+        }
+        return rows;
+      };
+
+      // Process JSON files first (TV Time Liberator export format)
+      for (const file of readFilesData) {
+        if (file.name.endsWith(".json")) {
+          try {
+            const parsed = JSON.parse(file.content);
+            if (Array.isArray(parsed)) {
+              parsed.forEach((item: any, index: number) => {
+                const isTv = "seenEpisodes" in item || "seasons" in item || item.type === "tv" || "tvshow_id" in item || "tv_show_id" in item;
+                if (isTv) {
+                  const showId = String(item.id || item.tvshow_id || item.tv_show_id || `jtv_${index}_${Date.now()}`);
+                  const showName = item.name || item.title || "مسلسل غير معروف";
+                  const episodes: { season: number; episode: number }[] = [];
+
+                  if (Array.isArray(item.seenEpisodes)) {
+                    item.seenEpisodes.forEach((ep: any) => {
+                      episodes.push({
+                        season: Number(ep.season || ep.seasonNumber || 1),
+                        episode: Number(ep.episode || ep.episodeNumber || 1)
+                      });
+                    });
+                  } else if (Array.isArray(item.seasons)) {
+                    item.seasons.forEach((season: any) => {
+                      const sNum = Number(season.number || season.seasonNumber || 1);
+                      if (Array.isArray(season.episodes)) {
+                        season.episodes.forEach((ep: any) => {
+                          if (ep.seen || ep.completed || ep.watched) {
+                            episodes.push({
+                              season: sNum,
+                              episode: Number(ep.number || ep.episodeNumber || 1)
+                            });
+                          }
+                        });
+                      }
+                    });
+                  }
+
+                  showsMap[showId] = {
+                    id: showId,
+                    name: showName,
+                    episodes: [...(showsMap[showId]?.episodes || []), ...episodes]
+                  };
+                } else {
+                  const mName = item.name || item.title;
+                  if (mName) {
+                    moviesList.push({
+                      id: String(item.id || `jmv_${index}_${Date.now()}`),
+                      name: mName
+                    });
+                  }
+                }
+              });
+            } else if (parsed && typeof parsed === "object") {
+              if (Array.isArray(parsed.shows)) {
+                parsed.shows.forEach((item: any, index: number) => {
+                  const showId = String(item.id || item.tv_show_id || `jtv_${index}_${Date.now()}`);
+                  const showName = item.name || item.title || "مسلسل غير معروف";
+                  const episodes: { season: number; episode: number }[] = [];
+                  if (Array.isArray(item.seen_episodes)) {
+                    item.seen_episodes.forEach((ep: any) => {
+                      episodes.push({ season: Number(ep.season || 1), episode: Number(ep.episode || 1) });
+                    });
+                  }
+                  showsMap[showId] = { id: showId, name: showName, episodes };
+                });
+              }
+              if (Array.isArray(parsed.movies)) {
+                parsed.movies.forEach((item: any, index: number) => {
+                  const mName = item.name || item.title;
+                  if (mName) {
+                    moviesList.push({
+                      id: String(item.id || `jmv_${index}_${Date.now()}`),
+                      name: mName
+                    });
+                  }
+                });
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing TV Time Liberator JSON:", e);
+          }
+        }
+      }
+
+      // Process CSV files (official TV Time GDPR export files)
+      for (const file of readFilesData) {
+        if (file.name.endsWith(".csv")) {
+          const rows = parseCSVRows(file.content);
+          if (rows.length < 2) continue;
+
+          const headers = rows[0].map(h => h.trim().toLowerCase());
+          const isFollowedShows = headers.includes("tv_show_id") || headers.includes("tv_show_name") || file.name.toLowerCase().includes("show");
+          const isFollowedMovies = headers.includes("movie_id") || headers.includes("movie_name") || file.name.toLowerCase().includes("movie");
+          const isSeenEpisodes = headers.includes("episode_number") || file.name.toLowerCase().includes("episode");
+
+          if (isSeenEpisodes) {
+            const showIdIdx = headers.findIndex(h => h.includes("show_id") || h.includes("tv_show_id"));
+            const seasonIdx = headers.findIndex(h => h.includes("season"));
+            const episodeIdx = headers.findIndex(h => h.includes("episode"));
+
+            if (showIdIdx !== -1 && seasonIdx !== -1 && episodeIdx !== -1) {
+              for (let r = 1; r < rows.length; r++) {
+                const row = rows[r];
+                if (row.length < 3) continue;
+                const showId = row[showIdIdx]?.trim();
+                const season = Number(row[seasonIdx]?.trim() || 1);
+                const epNum = Number(row[episodeIdx]?.trim() || 1);
+
+                if (showId) {
+                  if (!showsMap[showId]) {
+                    showsMap[showId] = { id: showId, name: `مسلسل TV Time #${showId}`, episodes: [] };
+                  }
+                  showsMap[showId].episodes.push({ season, episode: epNum });
+                }
+              }
+            }
+          } else if (isFollowedShows) {
+            const showIdIdx = headers.findIndex(h => h.includes("show_id") || h.includes("tv_show_id") || h === "id");
+            const nameIdx = headers.findIndex(h => h.includes("name") || h.includes("title"));
+
+            if (showIdIdx !== -1 && nameIdx !== -1) {
+              for (let r = 1; r < rows.length; r++) {
+                const row = rows[r];
+                if (row.length < 2) continue;
+                const showId = row[showIdIdx]?.trim();
+                const showName = row[nameIdx]?.trim();
+
+                if (showId && showName) {
+                  if (!showsMap[showId]) {
+                    showsMap[showId] = { id: showId, name: showName, episodes: [] };
+                  } else {
+                    showsMap[showId].name = showName;
+                  }
+                }
+              }
+            }
+          } else if (isFollowedMovies) {
+            const movieIdIdx = headers.findIndex(h => h.includes("movie_id") || h === "id");
+            const nameIdx = headers.findIndex(h => h.includes("name") || h.includes("title"));
+
+            if (movieIdIdx !== -1 && nameIdx !== -1) {
+              for (let r = 1; r < rows.length; r++) {
+                const row = rows[r];
+                if (row.length < 2) continue;
+                const mId = row[movieIdIdx]?.trim();
+                const mName = row[nameIdx]?.trim();
+
+                if (mId && mName) {
+                  moviesList.push({ id: mId, name: mName });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Convert maps into clean TrackedItems
+      const importedItems: TrackedItem[] = [];
+      const nowISO = new Date().toISOString();
+
+      // Convert TV shows
+      Object.values(showsMap).forEach((show, index) => {
+        const episodesBySeason: { [seasonNum: number]: number[] } = {};
+        show.episodes.forEach(ep => {
+          if (!episodesBySeason[ep.season]) {
+            episodesBySeason[ep.season] = [];
+          }
+          if (!episodesBySeason[ep.season].includes(ep.episode)) {
+            episodesBySeason[ep.season].push(ep.episode);
+          }
+        });
+
+        const totalSeasons = Object.keys(episodesBySeason).length > 0
+          ? Math.max(...Object.keys(episodesBySeason).map(Number))
+          : 1;
+
+        const seasonsData: Season[] = [];
+        for (let s = 1; s <= totalSeasons; s++) {
+          const completedEpNumbers = episodesBySeason[s] || [];
+          const maxEpNum = completedEpNumbers.length > 0 ? Math.max(...completedEpNumbers) : 10;
+          const totalEpsInSeason = Math.max(10, maxEpNum);
+
+          const epsList: Episode[] = Array.from({ length: totalEpsInSeason }, (_, i) => {
+            const epNum = i + 1;
+            const completed = completedEpNumbers.includes(epNum);
+            return {
+              episodeNumber: epNum,
+              name: `الحلقة ${epNum}`,
+              completed,
+            };
+          });
+
+          seasonsData.push({
+            seasonNumber: s,
+            name: `الموسم ${s}`,
+            episodeCount: totalEpsInSeason,
+            episodes: epsList,
+            isLoaded: true
+          });
+        }
+
+        const allCompleted = seasonsData.every(s => s.episodes?.every(ep => ep.completed));
+
+        importedItems.push({
+          id: `tvtime_tv_${show.id}_${index}_${Date.now()}`,
+          title: show.name,
+          type: "tv",
+          category: "series",
+          status: allCompleted ? "completed" : "watching",
+          posterPath: null,
+          backdropPath: null,
+          favorite: false,
+          addedAt: nowISO,
+          updatedAt: nowISO,
+          totalSeasons,
+          currentSeason: 1,
+          seasons: seasonsData,
+          completedAt: allCompleted ? nowISO : undefined
+        });
+      });
+
+      // Convert Movies
+      moviesList.forEach((movie, index) => {
+        importedItems.push({
+          id: `tvtime_movie_${movie.id}_${index}_${Date.now()}`,
+          title: movie.name,
+          type: "movie",
+          category: "movie",
+          status: "completed",
+          posterPath: null,
+          backdropPath: null,
+          favorite: false,
+          addedAt: nowISO,
+          updatedAt: nowISO,
+          completedAt: nowISO
+        });
+      });
+
+      if (importedItems.length === 0) {
+        showToast("لم نتمكن من قراءة أي أعمال صالحة في الملفات المرفوعة.", "error");
+        return;
+      }
+
+      // Filter out duplicates
+      const existingTitles = new Set(trackedItems.map((i) => i.title.toLowerCase()));
+      const filteredNewItems = importedItems.filter((i) => !existingTitles.has(i.title.toLowerCase()));
+
+      const merged = [...trackedItems, ...filteredNewItems];
+      saveTrackedItems(merged);
+
+      // Log into activity history
+      const history = { ...activityHistory };
+      filteredNewItems.forEach(item => {
+        if (item.status === "completed" && item.completedAt) {
+          const dateStr = item.completedAt.split("T")[0];
+          history[dateStr] = (history[dateStr] || 0) + 1;
+        } else if (item.seasons) {
+          let checkedCount = 0;
+          item.seasons.forEach(s => s.episodes?.forEach(ep => { if (ep.completed) checkedCount++; }));
+          if (checkedCount > 0) {
+            const dateStr = item.addedAt.split("T")[0];
+            history[dateStr] = (history[dateStr] || 0) + checkedCount;
+          }
+        }
+      });
+      saveActivityHistory(history);
+
+      showToast(`تم استيراد ${filteredNewItems.length} عمل من مكتبة TV Time بنجاح ومزامنة الحلقات!`);
+    } catch (e) {
+      console.error(e);
+      showToast("فشل معالجة ملفات TV Time. يرجى التأكد من صحة الملفات.", "error");
+    }
+
+    if (event.target) {
+      event.target.value = "";
+    }
+  };
+
   const handleResetApp = () => {
     if (confirm("تحذير: سيتم حذف جميع المسلسلات والأفلام وسجل تقدمك بالكامل. هل تريد الاستمرار؟")) {
       localStorage.clear();
@@ -632,15 +987,58 @@ export default function App() {
 
   // Theme-specific CSS mappings
   const getThemeBackground = () => {
-    if (theme === "netflix") return "bg-[#050508] text-white";
-    if (theme === "material") return "bg-slate-950 text-slate-100";
-    if (theme === "minimal") return "bg-zinc-950 text-zinc-100";
+    if (theme === "minimal") return "bg-[#f8f9fa] text-neutral-900";
+    if (theme === "netflix") return "bg-[#0c0a08] text-amber-50";
+    if (theme === "material") return "bg-[#121214] text-zinc-100";
     return "bg-[#020204] text-neutral-100"; // OLED Black
+  };
+
+  const getThemeSectionClass = () => {
+    if (theme === "minimal") return "bg-white border-neutral-200/80 text-neutral-950 shadow-sm";
+    if (theme === "netflix") return "bg-[#110f0c] border-amber-950/15 text-amber-100";
+    if (theme === "material") return "bg-[#18181c] border-zinc-900/50 text-zinc-100";
+    return "bg-[#0b0b0e] border-neutral-900/60 text-neutral-100"; // OLED Black
+  };
+
+  const getThemeHeadingClass = () => {
+    if (theme === "minimal") return "text-neutral-900";
+    if (theme === "netflix") return "text-amber-100";
+    if (theme === "material") return "text-zinc-100";
+    return "text-white";
+  };
+
+  const getThemeHeadingTextClass = () => {
+    if (theme === "minimal") return "text-neutral-950";
+    if (theme === "netflix") return "text-amber-200";
+    if (theme === "material") return "text-zinc-100";
+    return "text-white";
+  };
+
+  const getThemeSubtextClass = () => {
+    if (theme === "minimal") return "text-neutral-500";
+    if (theme === "netflix") return "text-amber-400/80";
+    if (theme === "material") return "text-zinc-400";
+    return "text-neutral-400";
+  };
+
+  const getThemeInputClass = () => {
+    if (theme === "minimal") return "bg-white border-neutral-200 text-neutral-900 focus:border-neutral-400 focus:bg-white";
+    if (theme === "netflix") return "bg-neutral-950/80 border-amber-950/30 text-amber-100 focus:border-amber-700/50";
+    if (theme === "material") return "bg-zinc-900/60 border-zinc-800 text-zinc-100 focus:border-zinc-700";
+    return "bg-[#0a0a0d] border border-neutral-900/60 text-neutral-200 focus:border-neutral-700";
+  };
+
+  const getThemeButtonClass = () => {
+    if (theme === "minimal") return "bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border-neutral-200/60";
+    if (theme === "netflix") return "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-950/30";
+    if (theme === "material") return "bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border-zinc-800";
+    return "bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border-neutral-800";
   };
 
   const getThemeAccentClass = () => {
     if (theme === "netflix") return "text-amber-400 hover:text-amber-300";
     if (theme === "material") return "text-teal-400 hover:text-teal-300";
+    if (theme === "minimal") return "text-neutral-900 hover:text-neutral-700";
     return "text-white";
   };
 
@@ -696,24 +1094,28 @@ export default function App() {
             {/* Minimal Header */}
             <header className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                <h2 className={`text-xl md:text-2xl font-bold tracking-tight flex items-center gap-2 ${getThemeHeadingClass()}`}>
                   <span>WatchVault</span>
-                  <span className="text-[10px] py-0.5 px-2 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-500 font-mono">PWA</span>
+                  <span className={`text-[10px] py-0.5 px-2 rounded-full font-mono border ${
+                    theme === "minimal" 
+                      ? "bg-neutral-100 border-neutral-200 text-neutral-600" 
+                      : "bg-neutral-900 border-neutral-800 text-neutral-500"
+                  }`}>PWA</span>
                 </h2>
-                <p className="text-xs text-neutral-500">مرحباً بك في مستودع المشاهدة الخاص بك. كل عمل هو مهمة تستحق الإنجاز.</p>
+                <p className={`text-xs mt-0.5 ${getThemeSubtextClass()}`}>مرحباً بك في مستودع المشاهدة الخاص بك. كل عمل هو مهمة تستحق الإنجاز.</p>
               </div>
               <button 
                 onClick={() => setActiveTab("search")}
-                className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800/80 flex items-center justify-center hover:bg-neutral-800 transition-colors"
+                className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-300 ${getThemeButtonClass()}`}
               >
-                <SearchIcon className="w-4 h-4 text-neutral-300" />
+                <SearchIcon className="w-4 h-4" />
               </button>
             </header>
 
             {/* Smart CONTINUE WATCHING (Resume) */}
             {resumeTarget ? (
               <section className="flex flex-col gap-3">
-                <h3 className="font-bold text-xs md:text-sm text-neutral-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <h3 className={`font-bold text-xs md:text-sm flex items-center gap-1.5 uppercase tracking-wider ${getThemeSubtextClass()}`}>
                   <Play className="w-3.5 h-3.5" />
                   <span>متابعة المشاهدة</span>
                 </h3>
@@ -775,24 +1177,34 @@ export default function App() {
             ) : null}
 
             {/* LIBRARY PROGRESS & CELEBRATION */}
-            <section className="bg-[#0b0b0e] border border-neutral-900/60 rounded-2xl p-5 md:p-6 shadow-md glow-subtle flex flex-col gap-4">
+            <section className={`rounded-2xl p-5 md:p-6 shadow-md border flex flex-col gap-4 transition-all duration-300 ${getThemeSectionClass()}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-bold text-xs md:text-sm text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Plus className="w-4 h-4 text-neutral-400" />
+                  <h3 className={`font-bold text-xs md:text-sm uppercase tracking-wider flex items-center gap-1.5 ${getThemeSubtextClass()}`}>
+                    <Plus className="w-4 h-4" />
                     <span>تقدم المكتبة الإجمالي</span>
                   </h3>
-                  <p className="text-xs text-neutral-500 mt-1">معدل تصفية وإكمال مهمات المشاهدة في مكتبتك</p>
+                  <p className={`text-xs mt-1 ${getThemeSubtextClass()}`}>معدل تصفية وإكمال مهمات المشاهدة في مكتبتك</p>
                 </div>
                 <div className="text-left">
-                  <span className="text-base md:text-2xl font-black text-white font-mono">{stats.completionRate}%</span>
+                  <span className={`text-base md:text-2xl font-black font-mono ${getThemeHeadingTextClass()}`}>{stats.completionRate}%</span>
                 </div>
               </div>
 
               {/* Real high quality progress bar */}
-              <div className="w-full bg-neutral-950 h-3 rounded-full overflow-hidden border border-neutral-900/30">
+              <div className={`w-full h-3 rounded-full overflow-hidden border ${
+                theme === "minimal" ? "bg-neutral-100 border-neutral-200" : "bg-neutral-950 border-neutral-900/30"
+              }`}>
                 <div
-                  className="bg-white h-full rounded-full transition-all duration-1000"
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    theme === "minimal" 
+                      ? "bg-neutral-900" 
+                      : theme === "netflix" 
+                        ? "bg-amber-400" 
+                        : theme === "material" 
+                          ? "bg-teal-400" 
+                          : "bg-white"
+                  }`}
                   style={{ width: `${stats.completionRate}%` }}
                 />
               </div>
@@ -801,20 +1213,24 @@ export default function App() {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3 bg-white/[0.02] border border-neutral-800 p-3.5 rounded-xl mt-1"
+                  className={`flex items-start gap-3 border p-3.5 rounded-xl mt-1 ${
+                    theme === "minimal"
+                      ? "bg-neutral-50 border-neutral-200 text-neutral-800"
+                      : "bg-white/[0.02] border-neutral-800 text-white"
+                  }`}
                 >
                   <Sparkles className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-xs font-bold text-white">إنجاز تاريخي! لقد أنهيت جميع الأعمال الموجودة في مكتبتك.</h4>
-                    <p className="text-[10px] text-neutral-400 mt-0.5 leading-relaxed">
+                    <h4 className="text-xs font-bold">إنجاز تاريخي! لقد أنهيت جميع الأعمال الموجودة في مكتبتك.</h4>
+                    <p className={`text-[10px] mt-0.5 leading-relaxed ${getThemeSubtextClass()}`}>
                       لا يوجد شيء متبقي للتتبع. لقد قمت بإنجاز رائع وحافظت على تركيزك! نقترح عليك العثور على أعمال رائعة جديدة وإضافتها للمشاهدة لاحقاً.
                     </p>
                   </div>
                 </motion.div>
               ) : (
-                <div className="flex items-center gap-6 text-[11px] text-neutral-400 font-medium">
+                <div className={`flex items-center gap-6 text-[11px] font-medium ${getThemeSubtextClass()}`}>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-white"></span>
+                    <span className={`w-2 h-2 rounded-full ${theme === "minimal" ? "bg-neutral-600" : "bg-white"}`}></span>
                     <span>{stats.totalTitles} عمل إجمالي</span>
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -832,7 +1248,7 @@ export default function App() {
             {/* RECENTLY FINISHED */}
             {stats.history.length > 0 && (
               <section className="flex flex-col gap-3">
-                <h3 className="font-bold text-xs md:text-sm text-neutral-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <h3 className={`font-bold text-xs md:text-sm flex items-center gap-1.5 uppercase tracking-wider ${getThemeSubtextClass()}`}>
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>المنتهي حديثاً</span>
                 </h3>
@@ -845,7 +1261,15 @@ export default function App() {
                         const original = trackedItems.find((i) => i.id === historyItem.itemId);
                         if (original) setSelectedItem(original);
                       }}
-                      className="snap-start shrink-0 w-32 bg-[#0a0a0d] hover:bg-[#121217] transition-all p-2 rounded-xl border border-neutral-900/50 cursor-pointer flex flex-col gap-2 group"
+                      className={`snap-start shrink-0 w-32 transition-all p-2 rounded-xl border cursor-pointer flex flex-col gap-2 group ${
+                        theme === "minimal"
+                          ? "bg-white hover:bg-neutral-50 border-neutral-200"
+                          : theme === "netflix"
+                            ? "bg-[#110f0c] hover:bg-[#1a1712] border-amber-950/20"
+                            : theme === "material"
+                              ? "bg-[#18181c] hover:bg-[#202024] border-zinc-900/50"
+                              : "bg-[#0a0a0d] hover:bg-[#121217] border border-neutral-900/50"
+                      }`}
                     >
                       {/* Clean Poster Image */}
                       <div className="aspect-[2/3] w-full rounded-lg overflow-hidden bg-neutral-950 shrink-0">
@@ -863,10 +1287,14 @@ export default function App() {
                         />
                       </div>
                       <div className="min-w-0 flex flex-col px-0.5">
-                        <h4 className="text-[11px] font-bold text-white truncate leading-none group-hover:text-neutral-200">
+                        <h4 className={`text-[11px] font-bold truncate leading-none ${
+                          theme === "minimal" ? "text-neutral-950" : "text-white"
+                        }`}>
                           {historyItem.title.split("|")[0].trim()}
                         </h4>
-                        <span className="text-[9px] text-neutral-500 mt-1 font-medium">
+                        <span className={`text-[9px] mt-1 font-medium ${
+                          theme === "minimal" ? "text-neutral-400 font-bold" : "text-neutral-500"
+                        }`}>
                           {formatTimeAgo(historyItem.completedAt)}
                         </span>
                       </div>
@@ -879,13 +1307,13 @@ export default function App() {
             {/* QUICK PREVIEW / DIRECT PASSAGE TO LIBRARY */}
             <section className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-xs md:text-sm text-neutral-400 flex items-center gap-1.5 uppercase tracking-wider">
+                <h3 className={`font-bold text-xs md:text-sm flex items-center gap-1.5 uppercase tracking-wider ${getThemeSubtextClass()}`}>
                   <PlaySquare className="w-3.5 h-3.5" />
                   <span>لمحة من المكتبة</span>
                 </h3>
                 <button 
                   onClick={() => setActiveTab("library")} 
-                  className="text-[10px] text-neutral-400 hover:text-white font-semibold flex items-center gap-0.5"
+                  className={`text-[10px] font-semibold flex items-center gap-0.5 ${getThemeSubtextClass()}`}
                 >
                   <span>عرض الكل</span>
                   <ChevronLeft className="w-3.5 h-3.5" />
@@ -893,12 +1321,16 @@ export default function App() {
               </div>
 
               {trackedItems.length === 0 ? (
-                <div className="text-center py-12 bg-neutral-950/40 rounded-2xl border border-neutral-900/60 p-6 flex flex-col items-center gap-3">
-                  <AlertCircle className="w-8 h-8 text-neutral-600" />
-                  <span className="text-xs text-neutral-400">مكتبتك فارغة تماماً حتى الآن. ابدأ بالبحث وإضافة أول عمل تتبع!</span>
+                <div className={`text-center py-12 rounded-2xl border p-6 flex flex-col items-center gap-3 ${getThemeSectionClass()}`}>
+                  <AlertCircle className="w-8 h-8 text-neutral-400 shrink-0" />
+                  <span className={`text-xs ${getThemeSubtextClass()}`}>مكتبتك فارغة تماماً حتى الآن. ابدأ بالبحث وإضافة أول عمل تتبع!</span>
                   <button
                     onClick={() => setActiveTab("search")}
-                    className="mt-2 text-xs bg-white text-black py-2 px-5 rounded-xl font-semibold hover:bg-neutral-200 transition-colors"
+                    className={`mt-2 text-xs py-2 px-5 rounded-xl font-bold transition-all duration-300 ${
+                      theme === "minimal"
+                        ? "bg-neutral-950 text-white hover:bg-neutral-900"
+                        : "bg-white text-black hover:bg-neutral-200"
+                    }`}
                   >
                     البحث وإضافة أعمال
                   </button>
@@ -915,7 +1347,7 @@ export default function App() {
                       />
                     ))}
                   </div>
-                  <ManualAddInlineForm onAdd={handleAddManualItem} />
+                  <ManualAddInlineForm onAdd={handleAddManualItem} theme={theme} />
                 </div>
               )}
             </section>
@@ -928,8 +1360,8 @@ export default function App() {
             {/* Header / Toolbar with filters */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl md:text-2xl font-bold text-white">مكتبة التتبع الذاتي</h2>
-                <p className="text-xs text-neutral-500 mt-1">كل مهمة مشاهدة تريد إنهاءها منظمة بأناقة</p>
+                <h2 className={`text-xl md:text-2xl font-bold ${getThemeHeadingClass()}`}>مكتبة التتبع الذاتي</h2>
+                <p className={`text-xs mt-1 ${getThemeSubtextClass()}`}>كل مهمة مشاهدة تريد إنهاءها منظمة بأناقة</p>
               </div>
 
               {/* Interactive Toolbar */}
@@ -941,7 +1373,7 @@ export default function App() {
                     placeholder="ابحث محلياً..."
                     value={localSearchQuery === " " ? "" : localSearchQuery}
                     onChange={(e) => setLocalSearchQuery(e.target.value || " ")}
-                    className="bg-[#0b0b0e] border border-neutral-900/60 text-xs rounded-xl pl-3.5 pr-8 py-2 w-44 focus:outline-none focus:border-neutral-700 text-neutral-200"
+                    className={`text-xs rounded-xl pl-3.5 pr-8 py-2 w-44 focus:outline-none border transition-colors ${getThemeInputClass()}`}
                   />
                   <SearchIcon className="absolute right-2.5 top-2.5 w-3.5 h-3.5 text-neutral-500" />
                 </div>
@@ -949,7 +1381,7 @@ export default function App() {
                 {/* Mode toggle (Poster Wall vs List) */}
                 <button
                   onClick={() => setPosterWallMode(!posterWallMode)}
-                  className="w-9 h-9 rounded-xl bg-[#0b0b0e] border border-neutral-900/60 flex items-center justify-center hover:bg-neutral-900 text-neutral-400 hover:text-white transition-all duration-200"
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-200 ${getThemeButtonClass()}`}
                   title={posterWallMode ? "العرض التفصيلي" : "عرض معرض الحائط للأفيشات"}
                 >
                   {posterWallMode ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
@@ -965,19 +1397,28 @@ export default function App() {
                 { id: "series", label: "المسلسلات" },
                 { id: "anime", label: "الأنمي" },
                 { id: "favorite", label: "المفضلة" },
-              ].map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => setLibraryFilter(filter.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-300 shrink-0 ${
-                    libraryFilter === filter.id
-                      ? "bg-white text-neutral-950 font-bold shadow-md"
-                      : "bg-[#0b0b0e] text-neutral-400 hover:text-white hover:bg-neutral-900 border border-neutral-900/30"
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              ))}
+              ].map((filter) => {
+                const isActive = libraryFilter === filter.id;
+                const activeStyle = isActive
+                  ? theme === "minimal"
+                    ? "bg-neutral-950 text-white font-bold shadow-sm"
+                    : theme === "netflix"
+                      ? "bg-amber-400 text-neutral-950 font-bold"
+                      : theme === "material"
+                        ? "bg-teal-400 text-neutral-950 font-bold"
+                        : "bg-white text-neutral-950 font-bold shadow-md"
+                  : getThemeButtonClass();
+
+                return (
+                  <button
+                    key={filter.id}
+                    onClick={() => setLibraryFilter(filter.id)}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold border transition-all duration-300 shrink-0 ${activeStyle}`}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Library Grid rendering */}
@@ -1000,9 +1441,9 @@ export default function App() {
 
               if (filtered.length === 0) {
                 return (
-                  <div className="text-center py-20 bg-neutral-950/40 rounded-2xl border border-neutral-900/60 p-6 flex flex-col items-center gap-3">
-                    <AlertCircle className="w-8 h-8 text-neutral-600" />
-                    <span className="text-xs text-neutral-400">لا توجد أعمال تطابق الفلاتر الحالية في مكتبتك.</span>
+                  <div className={`text-center py-20 rounded-2xl border p-6 flex flex-col items-center gap-3 ${getThemeSectionClass()}`}>
+                    <AlertCircle className="w-8 h-8 text-neutral-400 shrink-0" />
+                    <span className={`text-xs ${getThemeSubtextClass()}`}>لا توجد أعمال تطابق الفلاتر الحالية في مكتبتك.</span>
                   </div>
                 );
               }
@@ -1029,7 +1470,7 @@ export default function App() {
                       ))}
                     </AnimatePresence>
                   </motion.div>
-                  <ManualAddInlineForm onAdd={handleAddManualItem} />
+                  <ManualAddInlineForm onAdd={handleAddManualItem} theme={theme} />
                 </div>
               );
             })()}
@@ -1040,8 +1481,8 @@ export default function App() {
         {activeTab === "journey" && (
           <div className="flex flex-col gap-6 md:gap-8 animate-fade-in">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-white">رحلتي وإنجازاتي الحقيقية</h2>
-              <p className="text-xs text-neutral-500 mt-1">إحصائيات إتمام حقيقية 100% مبنية على تقدمك الفعلي</p>
+              <h2 className={`text-xl md:text-2xl font-bold ${getThemeHeadingClass()}`}>رحلتي وإنجازاتي الحقيقية</h2>
+              <p className={`text-xs mt-1 ${getThemeSubtextClass()}`}>إحصائيات إتمام حقيقية 100% مبنية على تقدمك الفعلي</p>
             </div>
 
             {/* Activity Heat Map component */}
@@ -1049,38 +1490,48 @@ export default function App() {
 
             {/* Advanced Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 select-none">
-              <div className="bg-[#0b0b0e] p-4 rounded-xl border border-neutral-900/60 flex flex-col gap-1 shadow-sm">
-                <span className="text-[10px] text-neutral-500 font-bold uppercase">الأعمال المتعقبة</span>
-                <span className="text-lg md:text-2xl font-black text-white font-mono">{stats.totalTitles}</span>
+              <div className={`p-4 rounded-xl border flex flex-col gap-1 transition-all duration-300 ${getThemeSectionClass()}`}>
+                <span className={`text-[10px] font-bold uppercase ${getThemeSubtextClass()}`}>الأعمال المتعقبة</span>
+                <span className={`text-lg md:text-2xl font-black font-mono ${getThemeHeadingTextClass()}`}>{stats.totalTitles}</span>
               </div>
-              <div className="bg-[#0b0b0e] p-4 rounded-xl border border-neutral-900/60 flex flex-col gap-1 shadow-sm">
-                <span className="text-[10px] text-neutral-500 font-bold uppercase">مكتمل بالكامل</span>
-                <span className="text-lg md:text-2xl font-black text-emerald-400 font-mono">{stats.completedCount}</span>
+              <div className={`p-4 rounded-xl border flex flex-col gap-1 transition-all duration-300 ${getThemeSectionClass()}`}>
+                <span className={`text-[10px] font-bold uppercase ${getThemeSubtextClass()}`}>مكتمل بالكامل</span>
+                <span className="text-lg md:text-2xl font-black text-emerald-500 font-mono">{stats.completedCount}</span>
               </div>
-              <div className="bg-[#0b0b0e] p-4 rounded-xl border border-neutral-900/60 flex flex-col gap-1 shadow-sm">
-                <span className="text-[10px] text-neutral-500 font-bold uppercase">قيد المتابعة والمهام</span>
-                <span className="text-lg md:text-2xl font-black text-neutral-400 font-mono">{stats.remainingCount}</span>
+              <div className={`p-4 rounded-xl border flex flex-col gap-1 transition-all duration-300 ${getThemeSectionClass()}`}>
+                <span className={`text-[10px] font-bold uppercase ${getThemeSubtextClass()}`}>قيد المتابعة والمهام</span>
+                <span className={`text-lg md:text-2xl font-black font-mono ${theme === "minimal" ? "text-neutral-500" : "text-neutral-400"}`}>{stats.remainingCount}</span>
               </div>
-              <div className="bg-[#0b0b0e] p-4 rounded-xl border border-neutral-900/60 flex flex-col gap-1 shadow-sm">
-                <span className="text-[10px] text-neutral-500 font-bold uppercase">نسبة الإنجاز الشاملة</span>
-                <span className="text-lg md:text-2xl font-black text-white font-mono">{stats.completionRate}%</span>
+              <div className={`p-4 rounded-xl border flex flex-col gap-1 transition-all duration-300 ${getThemeSectionClass()}`}>
+                <span className={`text-[10px] font-bold uppercase ${getThemeSubtextClass()}`}>نسبة الإنجاز الشاملة</span>
+                <span className={`text-lg md:text-2xl font-black font-mono ${getThemeHeadingTextClass()}`}>{stats.completionRate}%</span>
               </div>
             </div>
 
             {/* Category Statistics Breakdown */}
-            <div className="bg-[#0b0b0e] p-5 rounded-2xl border border-neutral-900/60 flex flex-col gap-4 shadow-sm">
-              <h3 className="font-bold text-xs md:text-sm text-neutral-300">معدل الإنجاز حسب فئات التتبع</h3>
+            <div className={`p-5 rounded-2xl border flex flex-col gap-4 shadow-sm transition-all duration-300 ${getThemeSectionClass()}`}>
+              <h3 className={`font-bold text-xs md:text-sm ${getThemeHeadingTextClass()}`}>معدل الإنجاز حسب فئات التتبع</h3>
               
               <div className="flex flex-col gap-4 text-xs font-medium">
                 {/* Movies Breakdown */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-neutral-400">
-                    <span>🎬 الأفلام</span>
-                    <span className="font-mono">{stats.moviesCount.completed} / {stats.moviesCount.total} مكتمل</span>
+                    <span className={getThemeHeadingClass()}>🎬 الأفلام</span>
+                    <span className={`font-mono ${getThemeSubtextClass()}`}>{stats.moviesCount.completed} / {stats.moviesCount.total} مكتمل</span>
                   </div>
-                  <div className="w-full bg-neutral-950 h-2 rounded-full overflow-hidden border border-neutral-900/20">
+                  <div className={`w-full h-2 rounded-full overflow-hidden border ${
+                    theme === "minimal" ? "bg-neutral-100 border-neutral-200" : "bg-neutral-950 border-neutral-900/20"
+                  }`}>
                     <div 
-                      className="bg-white h-full rounded-full transition-all duration-500"
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        theme === "minimal" 
+                          ? "bg-neutral-900" 
+                          : theme === "netflix" 
+                            ? "bg-amber-400" 
+                            : theme === "material" 
+                              ? "bg-teal-400" 
+                              : "bg-white"
+                      }`}
                       style={{ 
                         width: `${stats.moviesCount.total > 0 ? (stats.moviesCount.completed / stats.moviesCount.total) * 100 : 0}%` 
                       }}
@@ -1091,12 +1542,22 @@ export default function App() {
                 {/* TV Series Breakdown */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-neutral-400">
-                    <span>📺 المسلسلات</span>
-                    <span className="font-mono">{stats.seriesCount.completed} / {stats.seriesCount.total} مكتمل</span>
+                    <span className={getThemeHeadingClass()}>📺 المسلسلات</span>
+                    <span className={`font-mono ${getThemeSubtextClass()}`}>{stats.seriesCount.completed} / {stats.seriesCount.total} مكتمل</span>
                   </div>
-                  <div className="w-full bg-neutral-950 h-2 rounded-full overflow-hidden border border-neutral-900/20">
+                  <div className={`w-full h-2 rounded-full overflow-hidden border ${
+                    theme === "minimal" ? "bg-neutral-100 border-neutral-200" : "bg-neutral-950 border-neutral-900/20"
+                  }`}>
                     <div 
-                      className="bg-white h-full rounded-full transition-all duration-500"
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        theme === "minimal" 
+                          ? "bg-neutral-900" 
+                          : theme === "netflix" 
+                            ? "bg-amber-400" 
+                            : theme === "material" 
+                              ? "bg-teal-400" 
+                              : "bg-white"
+                      }`}
                       style={{ 
                         width: `${stats.seriesCount.total > 0 ? (stats.seriesCount.completed / stats.seriesCount.total) * 100 : 0}%` 
                       }}
@@ -1107,12 +1568,22 @@ export default function App() {
                 {/* Anime Breakdown */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-neutral-400">
-                    <span>🍥 الأنمي</span>
-                    <span className="font-mono">{stats.animeCount.completed} / {stats.animeCount.total} مكتمل</span>
+                    <span className={getThemeHeadingClass()}>🍥 الأنمي</span>
+                    <span className={`font-mono ${getThemeSubtextClass()}`}>{stats.animeCount.completed} / {stats.animeCount.total} مكتمل</span>
                   </div>
-                  <div className="w-full bg-neutral-950 h-2 rounded-full overflow-hidden border border-neutral-900/20">
+                  <div className={`w-full h-2 rounded-full overflow-hidden border ${
+                    theme === "minimal" ? "bg-neutral-100 border-neutral-200" : "bg-neutral-950 border-neutral-900/20"
+                  }`}>
                     <div 
-                      className="bg-white h-full rounded-full transition-all duration-500"
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        theme === "minimal" 
+                          ? "bg-neutral-900" 
+                          : theme === "netflix" 
+                            ? "bg-amber-400" 
+                            : theme === "material" 
+                              ? "bg-teal-400" 
+                              : "bg-white"
+                      }`}
                       style={{ 
                         width: `${stats.animeCount.total > 0 ? (stats.animeCount.completed / stats.animeCount.total) * 100 : 0}%` 
                       }}
@@ -1124,10 +1595,12 @@ export default function App() {
 
             {/* Completion timeline logs */}
             <div className="flex flex-col gap-3">
-              <h3 className="font-bold text-xs md:text-sm text-neutral-400 uppercase tracking-wider">سجل الإنجاز والتخرج</h3>
+              <h3 className={`font-bold text-xs md:text-sm uppercase tracking-wider ${getThemeSubtextClass()}`}>سجل الإنجاز والتخرج</h3>
               
               {stats.history.length === 0 ? (
-                <div className="text-center py-8 bg-neutral-950/20 rounded-xl border border-neutral-900/40 text-neutral-500 text-xs">
+                <div className={`text-center py-8 rounded-xl border text-xs ${
+                  theme === "minimal" ? "bg-white border-neutral-200 text-neutral-500" : "bg-neutral-950/20 border-neutral-900/40 text-neutral-500"
+                }`}>
                   لا يوجد أعمال مكتملة بالكامل حتى الآن. حافظ على التزامك لتسجيل أروع الإنجازات!
                 </div>
               ) : (
@@ -1139,11 +1612,19 @@ export default function App() {
                         const original = trackedItems.find((i) => i.id === log.itemId);
                         if (original) setSelectedItem(original);
                       }}
-                      className="bg-[#0b0b0e] hover:bg-neutral-900 border border-neutral-900/50 p-3 rounded-xl flex items-center justify-between gap-4 cursor-pointer transition-colors duration-200"
+                      className={`border p-3 rounded-xl flex items-center justify-between gap-4 cursor-pointer transition-all duration-200 ${
+                        theme === "minimal"
+                          ? "bg-white hover:bg-neutral-50 border-neutral-200/80"
+                          : theme === "netflix"
+                            ? "bg-[#110f0c] hover:bg-[#1a1712] border-amber-950/20"
+                            : theme === "material"
+                              ? "bg-[#18181c] hover:bg-[#202024] border-zinc-900/50"
+                              : "bg-[#0b0b0e] hover:bg-[#121217] border border-neutral-900/50"
+                      }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         {/* Tiny poster */}
-                        <div className="w-8 h-11 rounded bg-neutral-950 shrink-0 overflow-hidden">
+                        <div className="w-8 h-11 rounded bg-neutral-950 shrink-0 overflow-hidden shadow-sm">
                           <img
                             src={
                               log.posterPath
@@ -1158,13 +1639,17 @@ export default function App() {
                           />
                         </div>
                         <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-neutral-100 truncate">{log.title.split("|")[0].trim()}</h4>
-                          <p className="text-[10px] text-neutral-500 mt-0.5">
+                          <h4 className={`text-xs font-bold truncate ${theme === "minimal" ? "text-neutral-900" : "text-neutral-100"}`}>{log.title.split("|")[0].trim()}</h4>
+                          <p className={`text-[10px] mt-0.5 ${getThemeSubtextClass()}`}>
                             تم تصفية المهمة كـ مكتملة في {new Date(log.completedAt).toLocaleDateString("ar-EG", { weekday: "long", year: "numeric", month: "short", day: "numeric" })}
                           </p>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-neutral-400 shrink-0 bg-neutral-950 border border-neutral-900 px-2.5 py-1 rounded-md">
+                      <span className={`text-[10px] font-bold shrink-0 px-2.5 py-1 rounded-md border ${
+                        theme === "minimal"
+                          ? "bg-neutral-100 border-neutral-200 text-neutral-600"
+                          : "bg-neutral-950 border-neutral-900 text-neutral-400"
+                      }`}>
                         {formatTimeAgo(log.completedAt)}
                       </span>
                     </div>
@@ -1370,14 +1855,14 @@ export default function App() {
         {activeTab === "settings" && (
           <div className="flex flex-col gap-6 md:gap-8 animate-fade-in">
             <div>
-              <h2 className="text-xl md:text-2xl font-bold text-white">إعدادات النظام والنسخ الاحتياطي</h2>
-              <p className="text-xs text-neutral-500 mt-1">خصص مظهر التطبيق أو قم بحماية بيانات المشاهدة بضغطة واحدة</p>
+              <h2 className={`text-xl md:text-2xl font-bold ${getThemeHeadingClass()}`}>إعدادات النظام والنسخ الاحتياطي</h2>
+              <p className={`text-xs mt-1 ${getThemeSubtextClass()}`}>خصص مظهر التطبيق أو قم بحماية بيانات المشاهدة بضغطة واحدة</p>
             </div>
 
             {/* Multi Theme Selector */}
-            <section className="bg-[#0b0b0e] rounded-2xl border border-neutral-900/60 p-5 md:p-6 shadow-sm flex flex-col gap-4">
-              <h3 className="font-bold text-xs md:text-sm text-neutral-300">مظهر وثيمات الواجهة</h3>
-              <p className="text-[11px] text-neutral-500">اختر طابعك البصري المفضل، جميع الثيمات تحافظ على الهوية الداكنة المريحة للعين</p>
+            <section className={`rounded-2xl p-5 md:p-6 shadow-sm border flex flex-col gap-4 transition-all duration-300 ${getThemeSectionClass()}`}>
+              <h3 className={`font-bold text-xs md:text-sm ${getThemeHeadingTextClass()}`}>مظهر وثيمات الواجهة</h3>
+              <p className={`text-[11px] ${getThemeSubtextClass()}`}>اختر طابعك البصري المفضل، جميع الثيمات تحافظ على الهوية الداكنة المريحة للعين</p>
               
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
@@ -1385,40 +1870,68 @@ export default function App() {
                   { id: "material", label: "Material Slate", desc: "تدرجات رمادية وزرقاء هادئة" },
                   { id: "netflix", label: "Amber Cinematic", desc: "أصفر ذهبي وتصميم سينمائي فاخر" },
                   { id: "minimal", label: "Minimal Dark", desc: "مستوحى من بساطة نظام آبل" },
-                ].map((th) => (
-                  <button
-                    key={th.id}
-                    onClick={() => {
-                      setTheme(th.id as ThemeType);
-                      localStorage.setItem("wv_theme", th.id);
-                      showToast(`تم تطبيق ثيم ${th.label} بنجاح.`);
-                    }}
-                    className={`flex flex-col text-right p-4 rounded-xl border transition-all duration-300 gap-1.5 ${
-                      theme === th.id
-                        ? "bg-white/[0.03] border-white text-white shadow-xl"
-                        : "bg-neutral-950 border-neutral-900 text-neutral-400 hover:bg-neutral-900"
-                    }`}
-                  >
-                    <span className="text-xs font-bold text-neutral-200">{th.label}</span>
-                    <span className="text-[9px] text-neutral-500 leading-normal">{th.desc}</span>
-                  </button>
-                ))}
+                ].map((th) => {
+                  const isActive = theme === th.id;
+                  const cardStyle = isActive
+                    ? theme === "minimal"
+                      ? "bg-neutral-900 border-neutral-950 text-white shadow-lg scale-[1.01]"
+                      : theme === "netflix"
+                        ? "bg-amber-400/5 border-amber-400 text-amber-400 shadow-md scale-[1.01]"
+                        : theme === "material"
+                          ? "bg-teal-400/5 border-teal-400 text-teal-400 shadow-md scale-[1.01]"
+                          : "bg-white/[0.03] border-white text-white shadow-md scale-[1.01]"
+                    : theme === "minimal"
+                      ? "bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50"
+                      : "bg-neutral-950/40 border-neutral-900/60 text-neutral-400 hover:bg-neutral-900/30";
+
+                  return (
+                    <button
+                      key={th.id}
+                      onClick={() => {
+                        setTheme(th.id as ThemeType);
+                        localStorage.setItem("wv_theme", th.id);
+                        showToast(`تم تطبيق ثيم ${th.label} بنجاح.`);
+                      }}
+                      className={`flex flex-col text-right p-4 rounded-xl border transition-all duration-300 gap-1.5 ${cardStyle}`}
+                    >
+                      <span className={`text-xs font-bold ${
+                        isActive 
+                          ? "" 
+                          : theme === "minimal" 
+                            ? "text-neutral-800" 
+                            : "text-neutral-200"
+                      }`}>{th.label}</span>
+                      <span className={`text-[9px] leading-normal ${
+                        theme === "minimal" ? "text-neutral-400" : "text-neutral-500"
+                      }`}>{th.desc}</span>
+                    </button>
+                  );
+                })}
               </div>
             </section>
 
             {/* Export / Import backup systems */}
-            <section className="bg-[#0b0b0e] rounded-2xl border border-neutral-900/60 p-5 md:p-6 shadow-sm flex flex-col gap-4">
-              <h3 className="font-bold text-xs md:text-sm text-neutral-300">أمن بياناتك والنسخ الاحتياطي</h3>
-              <p className="text-[11px] text-neutral-500">تطبيق WatchVault يحفظ جميع بياناتك محلياً بشكل آمن تماماً، ويمكنك تصديرها واستيرادها على أي جهاز بضغطة زر واحدة</p>
+            <section className={`rounded-2xl p-5 md:p-6 shadow-sm border flex flex-col gap-4 transition-all duration-300 ${getThemeSectionClass()}`}>
+              <h3 className={`font-bold text-xs md:text-sm ${getThemeHeadingTextClass()}`}>أمن بياناتك والنسخ الاحتياطي</h3>
+              <p className={`text-[11px] ${getThemeSubtextClass()}`}>تطبيق WatchVault يحفظ جميع بياناتك محلياً بشكل آمن تماماً، ويمكنك تصديرها واستيرادها على أي جهاز بضغطة زر واحدة</p>
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 mt-1.5">
+              <div className="flex flex-col sm:flex-row items-center gap-3 mt-1.5 w-full">
                 {/* Export Button */}
                 <button
                   onClick={handleExportBackup}
-                  className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 text-xs font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200"
+                  className={`w-full sm:w-auto text-xs font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 border ${getThemeButtonClass()}`}
                 >
                   <FileDown className="w-4 h-4 text-neutral-400" />
                   <span>تصدير ملف المكتبة (Export JSON)</span>
+                </button>
+
+                {/* Copy Backup to Clipboard */}
+                <button
+                  onClick={handleCopyBackupToClipboard}
+                  className={`w-full sm:w-auto text-xs font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 border ${getThemeButtonClass()}`}
+                >
+                  <Copy className="w-4 h-4 text-neutral-400" />
+                  <span>نسخ النسخ الاحتياطي (Copy JSON)</span>
                 </button>
 
                 {/* Import Button with hidden input trigger */}
@@ -1431,10 +1944,74 @@ export default function App() {
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 text-xs font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200"
+                  className={`w-full sm:w-auto text-xs font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all duration-200 border ${getThemeButtonClass()}`}
                 >
                   <FileUp className="w-4 h-4 text-neutral-400" />
                   <span>استيراد ملف مكتبة (Import JSON)</span>
+                </button>
+              </div>
+            </section>
+
+            {/* TV Time Importer Card */}
+            <section className={`rounded-2xl p-5 md:p-6 shadow-sm border flex flex-col gap-4 transition-all duration-300 ${
+              theme === "netflix" 
+                ? "bg-[#161208] border-amber-500/20" 
+                : "bg-amber-500/[0.02] border-amber-500/10"
+            }`}>
+              <div className="flex items-start gap-3.5" dir="rtl">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+                  <Tv className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="text-right">
+                  <h3 className="font-bold text-xs md:text-sm text-amber-400">استيراد مكتبة TV Time</h3>
+                  <p className={`text-[11px] leading-relaxed mt-1 ${getThemeSubtextClass()}`}>
+                    هل لديك حساب سابق في TV Time؟ يمكنك نقل مسلسلاتك، أفلامك، وجميع الحلقات التي شاهدتها إلى مكتبتك هنا في ثوانٍ!
+                  </p>
+                </div>
+              </div>
+
+              {/* Guide instructions */}
+              <div className={`p-4 rounded-xl border text-[11px] leading-relaxed flex flex-col gap-2 ${
+                theme === "minimal" 
+                  ? "bg-amber-50/50 border-amber-200 text-amber-900" 
+                  : "bg-amber-500/5 border-amber-500/10 text-amber-200"
+              }`} dir="rtl">
+                <span className="font-bold flex items-center gap-1.5 text-xs text-amber-400">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  طريقة نقل البيانات بخطوات بسيطة:
+                </span>
+                <ul className="list-disc list-inside space-y-1.5 pr-1 text-neutral-400 text-right">
+                  <li>
+                    يمكنك استخدام إضافة المتصفح <strong className="text-amber-400">TV Time Liberator</strong> لتحميل ملفات <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 text-[10px]">shows.json</code> و <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 text-[10px]">movies.json</code> ورفعها مباشرة.
+                  </li>
+                  <li>
+                    أو ارفع ملفات الـ GDPR الرسمية التي تصلك من TV Time مباشرة مثل <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 text-[10px]">followed_shows.csv</code> و <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 text-[10px]">seen_episodes.csv</code> و <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 text-[10px]">followed_movies.csv</code>.
+                  </li>
+                  <li className="text-amber-500/90 font-medium list-none mt-2">
+                    💡 تلميح: يمكنك اختيار ورفع عدة ملفات معاً في نفس الوقت (مثل ملف المسلسلات وملف الحلقات) لتتم مطابقتها ودمج تقدمك تلقائياً!
+                  </li>
+                </ul>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 mt-1.5 w-full">
+                <input
+                  type="file"
+                  accept=".json,.csv"
+                  multiple
+                  ref={tvTimeInputRef}
+                  onChange={handleImportTVTime}
+                  className="hidden"
+                />
+                <button
+                  onClick={() => tvTimeInputRef.current?.click()}
+                  className={`w-full sm:w-auto text-xs font-bold py-3 px-5 rounded-xl flex items-center justify-center gap-2 transition-all duration-300 shadow-sm ${
+                    theme === "minimal"
+                      ? "bg-neutral-950 hover:bg-neutral-900 text-white"
+                      : "bg-amber-500 hover:bg-amber-600 text-neutral-950"
+                  }`}
+                >
+                  <FileUp className="w-4 h-4" />
+                  <span>اختر ملفات TV Time (JSON / CSV)</span>
                 </button>
               </div>
             </section>
@@ -1462,6 +2039,7 @@ export default function App() {
       <AnimatePresence>
         {selectedItem && (
           <ItemDetailsModal
+            key={selectedItem.id}
             item={selectedItem}
             theme={theme}
             onClose={() => setSelectedItem(null)}

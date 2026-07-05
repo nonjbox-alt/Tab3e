@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { TrackedItem, Season, Episode, ThemeType } from "../types";
-import { X, Calendar, Clock, Star, Film, CheckCircle2, Heart, RefreshCw, AlertCircle } from "lucide-react";
+import { X, Calendar, Clock, Star, Film, CheckCircle2, Heart, RefreshCw, AlertCircle, Trash2 } from "lucide-react";
 
 interface ItemDetailsModalProps {
   item: TrackedItem;
@@ -218,17 +218,43 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
 
   // Colors & styling based on active theme
   const getAccentColor = () => {
-    if (theme === "netflix") return "bg-amber-400 hover:bg-amber-500 text-neutral-950 font-bold";
-    if (theme === "material") return "bg-teal-500 hover:bg-teal-600 text-neutral-900 font-semibold";
-    if (theme === "minimal") return "bg-neutral-100 hover:bg-neutral-200 text-black";
-    return "bg-white hover:bg-neutral-100 text-black"; // OLED Black
+    if (theme === "netflix") return "bg-amber-400 hover:bg-amber-500 text-neutral-950 font-bold shadow-md shadow-amber-400/10";
+    if (theme === "material") return "bg-zinc-100 hover:bg-white text-neutral-950 font-bold";
+    if (theme === "minimal") return "bg-neutral-950 hover:bg-neutral-900 text-white font-bold";
+    return "bg-white hover:bg-neutral-100 text-black font-bold"; // OLED Black
   };
 
   const getAccentBorder = () => {
-    if (theme === "netflix") return "border-amber-400/30";
-    if (theme === "material") return "border-teal-500/30";
-    return "border-neutral-800";
+    if (theme === "minimal") return "border-neutral-200";
+    if (theme === "netflix") return "border-amber-950/20";
+    if (theme === "material") return "border-zinc-900";
+    return "border-neutral-900/60";
   };
+
+  const getSectionBg = () => {
+    if (theme === "minimal") return "bg-neutral-50 border-neutral-200/60 text-neutral-950";
+    if (theme === "netflix") return "bg-[#11100c] border-amber-950/20 text-amber-100";
+    if (theme === "material") return "bg-[#18181c] border-zinc-900/50 text-zinc-100";
+    return "bg-[#0b0b0e] border-neutral-900/50 text-neutral-100"; // OLED Black
+  };
+
+  const getModalBg = () => {
+    if (theme === "minimal") return "bg-white border-neutral-200 text-neutral-950";
+    if (theme === "netflix") return "bg-[#0d0c09] border-amber-950/20 text-amber-100";
+    if (theme === "material") return "bg-[#121214] border-zinc-900/60 text-zinc-100";
+    return "bg-[#050507] border-neutral-900/60 text-neutral-100"; // OLED Black
+  };
+
+  const getBackdropOverlay = () => {
+    if (theme === "minimal") return "from-white via-white/50 to-transparent";
+    if (theme === "netflix") return "from-[#0d0c09] via-[#0d0c09]/50 to-transparent";
+    if (theme === "material") return "from-[#121214] via-[#121214]/50 to-transparent";
+    return "from-[#050507] via-[#050507]/50 to-transparent";
+  };
+
+  const textTitle = theme === "minimal" ? "text-neutral-950" : "text-white";
+  const textSub = theme === "minimal" ? "text-neutral-500" : "text-neutral-400";
+  const textMain = theme === "minimal" ? "text-neutral-700" : "text-neutral-300";
 
   const backdropUrl = item.backdropPath
     ? item.backdropPath.startsWith("http")
@@ -249,11 +275,23 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", duration: 0.4 }}
-        className="relative bg-[#08080a] border border-neutral-900 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl shadow-black max-h-[90vh] flex flex-col glow-subtle"
+        className={`relative w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col border transition-colors duration-300 ${getModalBg()}`}
         id="item-detail-modal"
       >
-        {/* Close & Favorite Floating Controls */}
+        {/* Close, Favorite & Delete Floating Controls */}
         <div className="absolute top-4 left-4 z-20 flex gap-2">
+          <button
+            onClick={() => {
+              if (confirm("هل أنت متأكد من حذف هذا العمل من مكتبتك؟")) {
+                onDeleteItem(item.id);
+                onClose();
+              }
+            }}
+            className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/5 hover:bg-red-500/10 hover:border-red-500/20 transition-colors group"
+            title="إزالة من المكتبة"
+          >
+            <Trash2 className="w-4 h-4 text-neutral-400 group-hover:text-red-400 transition-colors" />
+          </button>
           <button
             onClick={handleFavoriteToggle}
             className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center border border-white/5 hover:bg-black/80 transition-colors"
@@ -280,15 +318,15 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               referrerPolicy="no-referrer"
             />
             {/* Ambient vignette overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#08080a] via-[#08080a]/50 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#08080a]/20 to-[#08080a]" />
+            <div className={`absolute inset-0 bg-gradient-to-t ${getBackdropOverlay()}`} />
+            <div className={`absolute inset-0 bg-gradient-to-r from-transparent to-transparent`} />
           </div>
 
           {/* Core Content Layout */}
           <div className="px-6 md:px-8 pb-8 relative -mt-16 md:-mt-24 z-10 flex flex-col md:flex-row gap-6 md:gap-8">
             {/* Pristine Poster Column */}
             <div className="w-32 md:w-44 shrink-0 mx-auto md:mx-0">
-              <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-neutral-950 shadow-2xl border border-neutral-900 relative">
+              <div className={`aspect-[2/3] w-full rounded-xl overflow-hidden bg-neutral-950 shadow-2xl border relative ${theme === "minimal" ? "border-neutral-200" : "border-neutral-900"}`}>
                 <img
                   src={posterUrl}
                   alt={item.title}
@@ -296,27 +334,16 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <button
-                onClick={() => {
-                  if (confirm("هل أنت متأكد من حذف هذا العمل من مكتبتك؟")) {
-                    onDeleteItem(item.id);
-                    onClose();
-                  }
-                }}
-                className="w-full mt-4 text-[10px] text-neutral-500 hover:text-red-400 text-center py-1 transition-colors"
-              >
-                إزالة من المكتبة
-              </button>
             </div>
 
             {/* Info and Progress Column */}
             <div className="flex-grow flex flex-col gap-4">
               {/* Category & Title */}
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-400">
+                <span className={`text-[10px] uppercase font-bold tracking-wider ${textSub}`}>
                   {item.category === "anime" ? "أنمي" : item.category === "series" ? "مسلسل تلفزيوني" : "فيلم"}
                 </span>
-                <h2 className="text-xl md:text-2xl font-bold text-white mt-1 leading-tight">
+                <h2 className={`text-xl md:text-2xl font-bold mt-1 leading-tight ${textTitle}`}>
                   {item.title.split("|")[0].trim()}
                 </h2>
                 {item.originalTitle && item.originalTitle !== item.title.split("|")[0].trim() && (
@@ -325,7 +352,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               </div>
 
               {/* Badges/Metadata */}
-              <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-neutral-400 border-b border-neutral-900/60 pb-3 font-medium">
+              <div className={`flex flex-wrap gap-x-4 gap-y-2 text-xs border-b pb-3 font-medium ${theme === "minimal" ? "border-neutral-200" : "border-neutral-900/60"} ${textSub}`}>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-neutral-500" />
                   <span>{item.releaseDate ? item.releaseDate.split("-")[0] : "مستمر"}</span>
@@ -337,8 +364,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   </div>
                 )}
                 {item.rating && item.rating > 0 && (
-                  <div className="flex items-center gap-1 text-amber-400">
-                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Star className="w-3.5 h-3.5 fill-amber-500" />
                     <span>{item.rating.toFixed(1)} / 10</span>
                   </div>
                 )}
@@ -347,8 +374,8 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               {/* Overview / Story Description */}
               {item.overview && (
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-neutral-400">القصة</span>
-                  <p className="text-xs md:text-sm text-neutral-300 leading-relaxed max-w-2xl">
+                  <span className={`text-xs font-semibold ${textSub}`}>القصة</span>
+                  <p className={`text-xs md:text-sm leading-relaxed max-w-2xl ${textMain}`}>
                     {item.overview}
                   </p>
                 </div>
@@ -358,7 +385,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
               {item.genres && item.genres.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {item.genres.map((g, i) => (
-                    <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800/30">
+                    <span key={i} className={`text-[10px] px-2 py-0.5 rounded-full border ${theme === "minimal" ? "bg-neutral-100 text-neutral-600 border-neutral-200" : "bg-neutral-900 text-neutral-400 border-neutral-800/30"}`}>
                       {g}
                     </span>
                   ))}
@@ -367,7 +394,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
 
               {/* Movie Action / TV Checklist */}
               {item.type === "movie" ? (
-                <div className="mt-4 pt-4 border-t border-neutral-900/40">
+                <div className={`mt-4 pt-4 border-t ${theme === "minimal" ? "border-neutral-200" : "border-neutral-900/40"}`}>
                   <button
                     onClick={handleMovieCompletionToggle}
                     className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl w-full md:w-auto transition-all duration-300 ${getAccentColor()}`}
@@ -378,21 +405,25 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                 </div>
               ) : (
                 /* Series / Anime Checklist Component */
-                <div className="mt-4 pt-4 border-t border-neutral-900/40">
+                <div className={`mt-4 pt-4 border-t ${theme === "minimal" ? "border-neutral-200" : "border-neutral-900/40"}`}>
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-4">
                     <div>
-                      <h3 className="font-semibold text-sm text-neutral-200">تتبع الحلقات الذكي</h3>
+                      <h3 className={`font-semibold text-sm ${textTitle}`}>تتبع الحلقات الذكي</h3>
                       <p className="text-[10px] text-neutral-500">الحلقات منسقة كـ قائمة مهام شخصية لإنجازها</p>
                     </div>
 
                     {/* Season Dropdown Selector */}
                     {item.totalSeasons && item.totalSeasons > 0 && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-neutral-400">الموسم:</span>
+                        <span className={`text-xs ${textSub}`}>الموسم:</span>
                         <select
                           value={selectedSeasonNum}
                           onChange={(e) => setSelectedSeasonNum(Number(e.target.value))}
-                          className="bg-[#0c0c0f] text-neutral-200 text-xs rounded-lg px-2.5 py-1.5 border border-neutral-800/60 focus:outline-none focus:ring-1 focus:ring-neutral-700"
+                          className={`text-xs rounded-lg px-2.5 py-1.5 border focus:outline-none ${
+                            theme === "minimal" 
+                              ? "bg-neutral-50 text-neutral-800 border-neutral-200" 
+                              : "bg-[#0c0c0f] text-neutral-200 border-neutral-800/60"
+                          }`}
                         >
                           {Array.from({ length: item.totalSeasons }, (_, i) => (
                             <option key={i + 1} value={i + 1}>
@@ -405,7 +436,7 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                   </div>
 
                   {/* Episodes List Container */}
-                  <div className={`bg-[#050507] rounded-xl border ${getAccentBorder()} p-1 overflow-hidden max-h-[300px] overflow-y-auto`}>
+                  <div className={`rounded-xl border p-1 overflow-hidden max-h-[300px] overflow-y-auto transition-all ${getSectionBg()}`}>
                     {loadingSeason ? (
                       <div className="flex flex-col items-center justify-center py-12 gap-3">
                         <RefreshCw className="w-5 h-5 text-neutral-500 animate-spin" />
@@ -423,11 +454,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                         </button>
                       </div>
                     ) : activeSeason && activeSeason.episodes && activeSeason.episodes.length > 0 ? (
-                      <div className="divide-y divide-neutral-900/40">
+                      <div className={`divide-y ${theme === "minimal" ? "divide-neutral-100" : "divide-neutral-900/40"}`}>
                         {activeSeason.episodes.map((ep) => (
                           <label
                             key={ep.episodeNumber}
-                            className={`flex items-center justify-between p-3 cursor-pointer hover:bg-white/[0.01] transition-all duration-200 group ${
+                            className={`flex items-center justify-between p-3 cursor-pointer hover:bg-neutral-500/5 transition-all duration-200 group ${
                               ep.completed ? "opacity-60" : "opacity-100"
                             }`}
                           >
@@ -436,19 +467,54 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
                                 {ep.episodeNumber}
                               </span>
                               <span className={`text-xs md:text-sm font-medium truncate ${
-                                ep.completed ? "line-through text-neutral-500" : "text-neutral-200"
+                                ep.completed ? "line-through text-neutral-500" : textTitle
                               }`}>
                                 {ep.name}
                               </span>
                             </div>
 
-                            {/* Custom Checkbox mimicking Apple/Material UI style */}
+                            {/* Accessible screen reader input + custom premium motion.div checkmark */}
                             <input
                               type="checkbox"
                               checked={ep.completed}
-                              onChange={(e) => handleEpisodeToggle(ep.episodeNumber, e.target.checked)}
-                              className="w-4.5 h-4.5 rounded-full border border-neutral-700 bg-transparent text-white checked:bg-neutral-200 checked:border-neutral-200 focus:ring-0 cursor-pointer shrink-0 appearance-none flex items-center justify-center after:content-['✓'] after:hidden checked:after:block after:text-[10px] after:text-neutral-950 after:font-bold"
+                              onChange={(e) => {
+                                handleEpisodeToggle(ep.episodeNumber, e.target.checked);
+                                if (navigator.vibrate) {
+                                  try { navigator.vibrate(10); } catch(err) {}
+                                }
+                              }}
+                              className="sr-only"
                             />
+                            
+                            <motion.div
+                              animate={{
+                                scale: ep.completed ? [1, 1.15, 1] : 1,
+                                backgroundColor: ep.completed 
+                                  ? (theme === "netflix" ? "#f59e0b" : theme === "material" ? "#14b8a6" : theme === "minimal" ? "#171717" : "#ffffff") 
+                                  : "transparent"
+                              }}
+                              transition={{
+                                scale: { type: "keyframes", duration: 0.2 },
+                                backgroundColor: { type: "spring", stiffness: 400, damping: 25 }
+                              }}
+                              className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                ep.completed 
+                                  ? "border-transparent" 
+                                  : (theme === "minimal" ? "border-neutral-300" : "border-neutral-700")
+                              }`}
+                            >
+                              {ep.completed && (
+                                <motion.span
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className={`text-[10px] font-bold ${
+                                    theme === "minimal" || theme === "netflix" ? "text-white" : "text-neutral-950"
+                                  }`}
+                                >
+                                  ✓
+                                </motion.span>
+                              )}
+                            </motion.div>
                           </label>
                         ))}
                       </div>

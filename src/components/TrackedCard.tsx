@@ -105,6 +105,26 @@ export const TrackedCard: React.FC<TrackedCardProps> = ({
     );
   }
 
+  const getCardBgClass = () => {
+    if (theme === "minimal") {
+      return "bg-white hover:bg-neutral-50 border-neutral-200/80 text-neutral-900 shadow-sm hover:shadow-md";
+    }
+    if (theme === "netflix") {
+      return "bg-[#11100c] hover:bg-[#181712] border-amber-950/20 text-amber-100";
+    }
+    if (theme === "material") {
+      return "bg-[#18181c] hover:bg-[#202026] border-zinc-900/60 text-zinc-100";
+    }
+    return "bg-[#0b0b0e] hover:bg-[#121217] border-neutral-900/40 text-neutral-100"; // OLED black default
+  };
+
+  const getTitleColorClass = () => {
+    if (theme === "minimal") return "text-neutral-900 group-hover:text-black";
+    if (theme === "netflix") return "text-amber-50 group-hover:text-amber-200";
+    if (theme === "material") return "text-zinc-100 group-hover:text-white";
+    return "text-neutral-100 group-hover:text-white";
+  };
+
   return (
     <motion.div
       layout
@@ -112,8 +132,9 @@ export const TrackedCard: React.FC<TrackedCardProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.96 }}
       onClick={onClick}
-      className="bg-[#0b0b0e] hover:bg-[#121217] rounded-2xl p-3 cursor-pointer shadow-md shadow-black/20 hover:shadow-xl hover:shadow-black/50 transition-colors duration-300 border border-neutral-900/40 flex flex-col h-full group"
+      className={`rounded-2xl p-3 cursor-pointer transition-colors duration-300 border flex flex-col h-full group ${getCardBgClass()}`}
     >
       {/* Pristine Poster */}
       <div className="aspect-[2/3] w-full rounded-xl overflow-hidden shadow-sm bg-neutral-950 shrink-0 relative">
@@ -131,7 +152,7 @@ export const TrackedCard: React.FC<TrackedCardProps> = ({
         <div className="flex flex-col gap-1">
           {/* Title and Category */}
           <div className="flex items-start justify-between gap-1">
-            <h4 className="font-semibold text-xs md:text-sm text-neutral-100 line-clamp-1 group-hover:text-white transition-colors duration-200">
+            <h4 className={`font-semibold text-xs md:text-sm line-clamp-1 transition-colors duration-200 ${getTitleColorClass()}`}>
               {item.title.split("|")[0].trim()}
             </h4>
             {item.favorite && (
@@ -139,7 +160,7 @@ export const TrackedCard: React.FC<TrackedCardProps> = ({
             )}
           </div>
           
-          <div className="flex items-center gap-1.5 text-[10px] text-neutral-500">
+          <div className={`flex items-center gap-1.5 text-[10px] ${theme === "minimal" ? "text-neutral-500" : "text-neutral-500"}`}>
             {getStatusIcon()}
             <span>
               {item.category === "anime" ? "أنمي" : item.category === "series" ? "مسلسل" : "فيلم"}
@@ -152,16 +173,16 @@ export const TrackedCard: React.FC<TrackedCardProps> = ({
         {/* Progress bar and episode numbers below name */}
         <div className="flex flex-col gap-1.5 mt-auto">
           {/* Custom micro progress bar */}
-          <div className="w-full bg-neutral-900 h-1.5 rounded-full overflow-hidden">
+          <div className={`w-full h-1.5 rounded-full overflow-hidden ${theme === "minimal" ? "bg-neutral-100" : "bg-neutral-900"}`}>
             <div
               className={`h-full rounded-full transition-all duration-500 ${getProgressColor()}`}
               style={{ width: `${percent}%` }}
             />
           </div>
           
-          <div className="flex items-center justify-between text-[10px] text-neutral-400 font-medium">
+          <div className={`flex items-center justify-between text-[10px] font-medium ${theme === "minimal" ? "text-neutral-500" : "text-neutral-400"}`}>
             <span>{episodesText}</span>
-            <span className="text-[9px] text-neutral-500">{percent}%</span>
+            <span className={`text-[9px] ${theme === "minimal" ? "text-neutral-400" : "text-neutral-500"}`}>{percent}%</span>
           </div>
         </div>
       </div>
