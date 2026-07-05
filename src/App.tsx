@@ -30,6 +30,7 @@ import {
   EyeOff
 } from "lucide-react";
 import { TrackedItem, ThemeType, Statistics, ItemCategory, Season, Episode, getApiUrl, getFetchHeaders } from "./types";
+import { fetchTmdb } from "./utils/tmdbClient";
 import { getInitialTrackedItems } from "./initialData";
 import { Navigation } from "./components/Navigation";
 import { TrackedCard } from "./components/TrackedCard";
@@ -271,13 +272,14 @@ export default function App() {
     setSearchingOnline(true);
     setSearchFeedback("جاري البحث عن العناوين المذهلة...");
     try {
-      const response = await fetch(getApiUrl(`/api/search?query=${encodeURIComponent(query)}&language=ar`), {
-        headers: getFetchHeaders(),
+      const data = await fetchTmdb({
+        apiPath: `/api/search?query=${encodeURIComponent(query)}&language=ar`,
+        directUrlCreator: (key) =>
+          `https://api.themoviedb.org/3/search/multi?api_key=${key}&query=${encodeURIComponent(
+            query
+          )}&language=ar&include_adult=false`,
       });
-      if (!response.ok) {
-        throw new Error("فشل جلب نتائج البحث من TMDB");
-      }
-      const data = await response.json();
+
       const results = data.results || [];
       
       // Filter out people and unneeded content types
@@ -351,11 +353,11 @@ export default function App() {
 
     try {
       // Fetch full details to get total seasons and backdrop
-      const detailsResp = await fetch(getApiUrl(`/api/details?id=${tmdbItem.id}&type=${tmdbItem.media_type}&language=ar`), {
-        headers: getFetchHeaders(),
+      const details = await fetchTmdb({
+        apiPath: `/api/details?id=${tmdbItem.id}&type=${tmdbItem.media_type}&language=ar`,
+        directUrlCreator: (key) =>
+          `https://api.themoviedb.org/3/${tmdbItem.media_type}/${tmdbItem.id}?api_key=${key}&language=ar&append_to_response=credits,images,videos,recommendations`,
       });
-      if (!detailsResp.ok) throw new Error("Details fetch failed");
-      const details = await detailsResp.json();
 
       const category: ItemCategory = 
         tmdbItem.media_type === "tv"

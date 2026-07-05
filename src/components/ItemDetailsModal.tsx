@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { TrackedItem, Season, Episode, ThemeType, getApiUrl, getFetchHeaders } from "../types";
+import { fetchTmdb } from "../utils/tmdbClient";
 import { X, Calendar, Clock, Star, Film, CheckCircle2, Heart, RefreshCw, AlertCircle, Trash2, Edit, Image as ImageIcon, Save, Plus, Minus } from "lucide-react";
 
 interface ItemDetailsModalProps {
@@ -72,13 +73,11 @@ export const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
     setLoadingSeason(true);
     setErrorSeason(null);
     try {
-      const response = await fetch(getApiUrl(`/api/season?id=${tmdbId}&season=${seasonNum}&language=ar`), {
-        headers: getFetchHeaders(),
+      const data = await fetchTmdb({
+        apiPath: `/api/season?id=${tmdbId}&season=${seasonNum}&language=ar`,
+        directUrlCreator: (key) =>
+          `https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}?api_key=${key}&language=ar`,
       });
-      if (!response.ok) {
-        throw new Error("فشل جلب تفاصيل الموسم من TMDB");
-      }
-      const data = await response.json();
       
       const apiEpisodes = data.episodes || [];
       const newEpisodes: Episode[] = apiEpisodes.map((ep: any) => ({
